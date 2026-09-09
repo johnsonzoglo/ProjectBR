@@ -1,32 +1,107 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, Check, CheckCircle2, ChevronRight, Clock3, Coins, Crown, Globe2, Layers2, Play, ShieldCheck, Sparkles, Users, Wallet } from "lucide-react";
-import { Shell } from "./shell";
-import type { Profile } from "../lib/api";
-const sampleTasks = [
-  { title: "Discover something new", text: "Explore a featured website", category: "Explore", icon: Globe2, color: "peach", points: 120, time: "2 min" },
-  { title: "A fresh perspective", text: "Watch an approved brand story", category: "Watch", icon: Play, color: "lavender", points: 200, time: "5 min" },
-  { title: "Your opinion matters", text: "Share thoughtful product feedback", category: "Feedback", icon: Users, color: "mint", points: 350, time: "8 min" },
-];
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, ArrowUpRight, Bell, Check, ChevronRight, Coins, Crown, Flame, Gift, Medal, Moon, Play, RotateCcw, ShieldCheck, Sparkles, Sun, Target, Trophy, UserRound, Users, Zap } from "lucide-react";
+import { api, type Profile } from "../lib/api";
+import { AchievementBadge, ClaimSuccessModal, Modal, ProgressRing, RewardCard, StreakCard } from "./rewards/primitives";
+import { AccountReadyCard, BalanceCard, DailyBonusCard, MembershipCard, TaskCard } from "./rewards/cards";
+import { BottomNavigation, DesktopNavigation } from "./rewards/navigation";
+import { categories, previewTasks, categoryIcons, type Category, type PreviewTask } from "./rewards/data";
+
+type InfoPanel = "notifications" | "bonus" | "withdraw" | "level" | null;
+const panels = {
+  notifications: { title: "You’re all caught up.", icon: Bell, description: "Task approvals, reward updates, and account alerts will live here when notifications launch. There are no notifications to review yet." },
+  bonus: { title: "A little boost, every day.", icon: Gift, description: "Daily bonus rewards are a preview of what’s next. Bonus amounts and eligibility will be set by the platform before launch. Nothing can be claimed yet." },
+  withdraw: { title: "Your rewards, clearly explained.", icon: Coins, description: "The preview uses an illustrative rate of 100 points to $1. Balances are examples. Real conversions and withdrawals will become available after the wallet module is connected." },
+  level: { title: "Every small step counts.", icon: Trophy, description: "Levels, XP, streaks, and badges are design previews. They show how progress could look; your account has not earned these milestones. Qualification rules will be published before launch." },
+};
+
 export function Dashboard({ profile }: { profile?: Profile }) {
   const preview = !profile;
-  return <Shell preview={preview} name={profile?.user.name} admin={profile?.permissions.includes("users.read")}>
-    <div className="page-heading"><div><div className="eyebrow">YOUR DAILY DOSE OF POSSIBILITY</div><h1>{preview ? "A little effort. A little more." : `Welcome, ${profile.user.name.split(" ")[0]}.`}</h1><p>Turn a few spare moments into something rewarding.</p></div><span className="date-chip"><span className="sun-icon">✳</span> One task at a time</span></div>
-    {preview ? <div className="preview-note"><span><Sparkles size={16} /><strong>Take a look around.</strong> Sample data previews upcoming rewards features.</span><Link href="/register">Create your account <ArrowRight size={16} /></Link></div> : <div className="preview-note"><span><ShieldCheck size={17} /><strong>Your account is ready.</strong> Tasks and wallet services arrive in the next modules.</span><Link href="/profile">View profile <ArrowRight size={16} /></Link></div>}
-    <section className="stats-grid" aria-label="Balance summary">
-      <article className="stat-card featured"><div className="stat-label">Total points <Coins size={19} /></div><div className="stat-value">{preview ? "12,450" : "—"}<span>pts</span></div><div className="stat-foot">{preview ? <><span className="tiny-pill">↗ 12.8%</span> sample monthly growth</> : "Points ledger coming next"}</div></article>
-      <article className="stat-card"><div className="stat-label">USD equivalent <span className="currency-icon">$</span></div><div className="stat-value">{preview ? "$124.50" : "—"}</div><div className="stat-foot">{preview ? "Illustrative rate · 100 points = $1" : "Conversion rate not configured"}</div></article>
-      <article className="stat-card"><div className="stat-label">Withdrawable <Wallet size={19} /></div><div className="stat-value">{preview ? "$85.00" : "—"}<span className="available-dot" /></div><div className="stat-foot">{preview ? "Sample eligible balance" : "Withdrawals not enabled yet"}</div></article>
-      <article className="stat-card"><div className="stat-label">Today’s earnings <Sparkles size={19} /></div><div className="stat-value">{preview ? "+450" : "—"}<span>pts</span></div><div className="stat-foot">{preview ? <><CheckCircle2 size={14} /> 3 sample tasks completed</> : "Your journey starts here"}</div></article>
-    </section>
-    <div className="dashboard-columns"><div className="dashboard-primary">
-      <section className="hero-card"><div className="hero-copy"><span className="hero-kicker"><span /> MAKE YOUR TIME COUNT</span><h2>Your next reward<br />starts with a small step.</h2><p>Find a task that fits your day.<br />Complete it. Get verified. Earn points.</p><Link className="button dark" href={preview ? "/register" : "/tasks"}>{preview ? "Start your journey" : "Explore tasks"}<ArrowUpRight size={17} /></Link></div><div className="hero-art" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="floating-check"><Check size={22} /></div><div className="reward-token"><Layers2 size={58} strokeWidth={1.8} /></div><div className="floating-spark">✳</div><div className="reward-ticket"><span className="ticket-icon"><CheckCircle2 size={23} /></span><span>Little wins add up<strong>Keep moving forward</strong></span></div></div></section>
-      <section className="panel earnings-panel"><div className="section-top"><div><h2>Earnings overview</h2><p>{preview ? "Your progress, one day at a time" : "Your earnings will appear when rewards launch"}</p></div><span className="select-chip">Last 7 days</span></div><div className="chart-key"><span className="orange-dot" /><span>Points earned</span>{preview && <strong>2,850 <small>pts this week · sample</small></strong>}</div><div className="chart" role="img" aria-label={preview ? "Sample points earned: Monday 350, Tuesday 500, Wednesday 280, Thursday 620, Friday 400, Saturday 250, Sunday 450" : "No earnings data yet"}><div className="chart-y"><span>800</span><span>600</span><span>400</span><span>200</span><span>0</span></div><div className="chart-bars">{[350, 500, 280, 620, 400, 250, 450].map((v, i) => <div className="bar-col" key={i}><div className={`bar ${i === 6 ? "current" : ""}`} style={{ height: preview ? `${v / 8}%` : "2px" }}>{preview && i === 6 && <span className="bar-tooltip">450 pts</span>}</div><span>{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}</span></div>)}</div></div></section>
-      <section><div className="section-top tasks-title"><div><h2>A little something for everyone</h2><p>{preview ? "A preview of the kinds of tasks you’ll find" : "Task categories planned for the next module"}</p></div><Link href="/tasks" className="text-link">Explore <ArrowRight size={16} /></Link></div><div className="task-grid">{sampleTasks.map(({ title, text, category, icon: Icon, color, points, time }) => <article className="task-card" key={title}><div className="task-card-top"><span className={`task-icon ${color}`}><Icon size={22} /></span><span className="task-category">{category}</span></div><h3>{title}</h3><p>{text}</p><div className="task-meta"><span><Clock3 size={13} />{time}</span><span>{preview ? "Sample task" : "Coming soon"}</span></div><div className="task-reward"><strong>{preview ? `+${points}` : "—"} <small>pts</small></strong><Link href="/tasks" aria-label={`Learn about ${category.toLowerCase()} tasks`}><ArrowUpRight size={18} /></Link></div></article>)}</div></section>
-    </div><aside className="dashboard-secondary">
-      <section className="panel progress-panel"><div className="section-top"><h2>Daily momentum</h2><span className="soft-icon"><Sparkles size={18} /></span></div><div className="progress-ring" style={{ "--progress": preview ? "60%" : "0%" } as React.CSSProperties}><div><strong>{preview ? "3" : "0"}<span> / {preview ? "5" : "0"}</span></strong><small>{preview ? "sample tasks" : "available tasks"}</small></div></div><h3>{preview ? "You’re finding your rhythm" : "A fresh start awaits"}</h3><p>{preview ? "Small wins make a big difference.\nKeep the good momentum going." : "Progress appears here when\napproved tasks become available."}</p><div className="progress-bottom"><span><span className="orange-dot" />Daily progress</span><strong>{preview ? "60%" : "—"}</strong></div></section>
-      <section className="membership-card"><span className="membership-label"><Crown size={18} /> MEMBERSHIP</span><h2>Room to grow.</h2><p>More possibilities, at your pace.<br />Explore the benefits of membership.</p><div className="membership-divider" /><Link href="/membership">Discover memberships <ArrowUpRight size={17} /></Link></section>
-      <section className="panel activity-panel"><div className="section-top"><h2>Recent activity</h2><span className="soft-icon"><Clock3 size={17} /></span></div>{preview ? <>{[{ text: "Website task approved", sub: "Today, 10:42 AM", value: "+120 pts" }, { text: "Feedback approved", sub: "Today, 9:18 AM", value: "+250 pts" }, { text: "Referral qualified", sub: "Yesterday", value: "+500 pts" }].map(a => <div className="activity-item" key={a.text}><span className="activity-icon"><ArrowDownLeft size={17} /></span><div><strong>{a.text}</strong><small>{a.sub}</small></div><b>{a.value}</b></div>)}<span className="sample-caption">Illustrative activity · no real transactions</span></> : <div className="empty-activity"><ShieldCheck size={24} /><strong>Email verified</strong><p>Your account is ready for the next step.</p></div>}<Link className="panel-footer-link" href={preview ? "/register" : "/profile"}>{preview ? "Begin your own story" : "Manage your account"}<ChevronRight size={15} /></Link></section>
-    </aside></div>
-  </Shell>;
+  const name = profile?.user.name || "explorer";
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [greeting, setGreeting] = useState("Hey there");
+  const [category, setCategory] = useState<Category>("All");
+  const [expanded, setExpanded] = useState(false);
+  const [info, setInfo] = useState<InfoPanel>(null);
+  const [selected, setSelected] = useState<PreviewTask | null>(null);
+  const [step, setStep] = useState<"details" | "verify">("details");
+  const [code, setCode] = useState("");
+  const [claimError, setClaimError] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [completed, setCompleted] = useState<string[]>([]);
+  const [success, setSuccess] = useState<number | null>(null);
+  const [logoutBusy, setLogoutBusy] = useState(false);
+  const [error, setError] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tasksRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const hour = new Date().getHours();
+      setGreeting(hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
+      try { if (localStorage.getItem("rewardly-theme") === "light") setTheme("light"); } catch { /* Theme preferences are optional. */ }
+    });
+    return () => { cancelAnimationFrame(frame); if (timer.current) clearTimeout(timer.current); };
+  }, []);
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    try { localStorage.setItem("rewardly-theme", next); } catch { /* Continue without saving the preference. */ }
+  }
+  async function logout() {
+    setLogoutBusy(true); setError("");
+    try { await api("/auth/sign-out", { method: "POST", body: "{}" }); window.location.assign("/login"); }
+    catch (e) { setError((e as Error).message); setLogoutBusy(false); }
+  }
+  function openTask(task: PreviewTask) { setSelected(task); setStep("details"); setCode(""); setClaimError(""); }
+  function closeTask() { if (timer.current) clearTimeout(timer.current); setChecking(false); setSelected(null); }
+  function verify(event: React.FormEvent) {
+    event.preventDefault();
+    if (!selected || !preview || checking || completed.includes(selected.id)) return;
+    if (code.trim().toUpperCase() !== "DEMO150") { setClaimError("Use the demo code DEMO150 to try this preview."); return; }
+    setClaimError(""); setChecking(true);
+    const task = selected;
+    timer.current = setTimeout(() => {
+      setCompleted(previous => previous.includes(task.id) ? previous : [...previous, task.id]);
+      setSelected(null); setChecking(false); setSuccess(task.points);
+    }, 650);
+  }
+  function exploreTasks() {
+    tasksRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+    tasksRef.current?.focus({ preventScroll: true });
+  }
+  const samplePoints = 12450 + previewTasks.filter(task => completed.includes(task.id)).reduce((sum, task) => sum + task.points, 0);
+  const dailyCompleted = preview ? Math.min(7, 4 + completed.length) : 0;
+  const filtered = previewTasks.filter(task => category === "All" || task.category === category);
+  const visibleTasks = category === "All" && !expanded ? filtered.slice(0, 4) : filtered;
+  const currentPanel = info ? panels[info] : null;
+  const TaskIcon = selected ? categoryIcons[selected.category] : Play;
+
+  return <div className="reward-app" data-theme={theme}>
+    <a href="#rw-main" className="rw-skip-link">Skip to dashboard</a>
+    <DesktopNavigation preview={preview} name={name} admin={!!profile?.permissions.includes("users.read")} onLogout={logout} busy={logoutBusy} />
+    <div className="rw-main-wrap">
+      <header className="rw-header"><Link href={preview ? "/login" : "/profile"} className="rw-avatar rw-header-avatar" aria-label={preview ? "Sign in to your account" : "Your profile"}>{preview ? <UserRound size={25} /> : name.slice(0, 1).toUpperCase()}<span className="rw-avatar-online" /></Link><div className="rw-greeting"><span>LET’S MAKE TODAY COUNT</span><h1>{greeting}, <strong>{name.split(" ")[0]}.</strong><span className="rw-wave" aria-hidden="true">👋</span></h1><Link href={preview ? "/membership" : "/profile"} className="rw-member-chip">{preview ? <><Crown size={12} />Starter · preview</> : <><ShieldCheck size={12} />Verified account</>}<ChevronRight size={11} /></Link></div><div className="rw-header-actions"><button className="rw-icon-button rw-theme-toggle" aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} onClick={toggleTheme}>{theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}</button><button className="rw-icon-button rw-notification-button" onClick={() => setInfo("notifications")} aria-label="Open notifications"><Bell size={20} /></button></div></header>
+      <main id="rw-main" className="rw-main">
+        <div className="rw-preview-banner"><span className="rw-preview-icon"><Sparkles size={14} /></span><p>{preview ? <><strong>A sneak peek at your next chapter.</strong><span> Demo data. No real rewards.</span></> : <><strong>Your account is ready.</strong><span> Rewards features are coming soon.</span></>}</p>{preview ? <Link href="/register">Join Rewardly<ArrowUpRight size={15} /></Link> : <Link href="/profile">My account<ArrowUpRight size={15} /></Link>}</div>
+        {error && <div role="alert" className="rw-error">{error}</div>}
+        <div className="rw-dashboard-grid">
+          <div className="rw-wallet-area"><BalanceCard preview={preview} points={samplePoints} onRewards={() => setInfo("withdraw")} /></div>
+          <RewardCard className="rw-progress-card"><div className="rw-section-title"><span className="rw-title-icon"><Target size={19} /></span><h2>Your daily mission</h2><span className="rw-tag">{preview ? "DEMO" : "SOON"}</span></div><div className="rw-progress-body"><ProgressRing completed={dailyCompleted} total={preview ? 7 : 0} /><div><span className="rw-progress-eyebrow">{preview ? dailyCompleted === 7 ? "MISSION COMPLETE" : "YOU’VE GOT THIS" : "A FRESH START"}</span><h3>{preview ? dailyCompleted === 7 ? <>Look at you<br />go!</> : <>{7 - dailyCompleted} more little<br />wins to go.</> : <>Good things<br />are on the way.</>}</h3><p>{preview ? "Keep your momentum going." : "Approved tasks arrive next."}</p></div></div><button className="rw-mission-button" onClick={exploreTasks}>{preview ? "Find your next task" : "Explore task previews"}<ArrowRight size={16} /></button></RewardCard>
+          <div className="rw-streak-area"><StreakCard preview={preview} /></div>
+          <section className="rw-tasks-area" id="rw-tasks" ref={tasksRef} tabIndex={-1} aria-labelledby="rw-tasks-title"><div className="rw-task-section-heading"><div><span className="rw-overline">LITTLE EFFORT. REAL POSSIBILITY.</span><h2 id="rw-tasks-title">Find your next win<span className="rw-title-dot">.</span></h2><p>{preview ? "A few minutes. A fresh opportunity." : "A preview of the tasks we’re building."}</p></div><span className="rw-task-count">{preview ? `${previewTasks.length} previews` : "Coming soon"}</span></div><div className="rw-task-filters" role="group" aria-label="Filter preview tasks by category">{categories.map(item => <button key={item} className={item === category ? "is-active" : ""} aria-pressed={item === category} onClick={() => { setCategory(item); setExpanded(false); }}>{item === "All" && <Sparkles size={12} />}{item}</button>)}</div><div className="rw-tasks-grid" aria-live="polite">{visibleTasks.map(task => <TaskCard key={task.id} task={task} preview={preview} completed={completed.includes(task.id)} onStart={openTask} />)}</div>{category === "All" && <button className="rw-view-all" onClick={() => setExpanded(!expanded)}>{expanded ? "Show fewer previews" : "See all 6 task previews"}<ArrowRight size={15} /></button>}</section>
+          <div className="rw-bonus-area"><DailyBonusCard onOpen={() => setInfo("bonus")} preview={preview} /></div>
+          <RewardCard className="rw-journey-card"><div className="rw-section-title"><span className="rw-title-icon"><Trophy size={20} /></span><h2>Your little wins, celebrated</h2><button className="rw-icon-button" aria-label="About levels and achievements" onClick={() => setInfo("level")}><ArrowUpRight size={19} /></button></div><div className="rw-level-section"><span className="rw-level-icon"><Zap size={22} fill="currentColor" /></span><div className="rw-level-info"><div><strong>{preview ? "Level 4 · Go-getter" : "Your journey starts here"}</strong><span>{preview ? "650 / 1,000 XP" : "Levels coming soon"}</span></div><div className="rw-xp-track" role="progressbar" aria-label="Sample experience progress" aria-valuemin={0} aria-valuemax={1000} aria-valuenow={preview ? 650 : 0}><span style={{ width: preview ? "65%" : "0%" }} /></div><small>{preview ? "350 sample XP to your next level" : "Progress will follow the published qualification rules."}</small></div></div><div className="rw-achievements"><AchievementBadge icon={Zap} title="First steps" unlocked={preview || !!profile?.user.emailVerified} /><AchievementBadge icon={Flame} title="On a roll" unlocked={preview} /><AchievementBadge icon={Users} title="Better together" unlocked={false} /><AchievementBadge icon={Medal} title="Big dreamer" unlocked={false} /></div><span className="rw-fine-print">{preview ? "Sample levels, streaks, and achievements" : "Visual previews · achievement tracking is not active"}</span></RewardCard>
+          <div className="rw-membership-area"><MembershipCard preview={preview} /></div>
+          <section className="rw-referral-teaser"><span className="rw-friends-icon"><Users size={27} /></span><div><span className="rw-overline">GOOD THINGS ARE BETTER SHARED</span><h2>Bring your people.</h2><p>More friends. More little wins together.</p></div><Link href="/referrals" className="rw-button rw-button-secondary">Explore referrals<ArrowUpRight size={16} /></Link><div className="rw-referral-decoration" aria-hidden="true"><span>✦</span><span>✦</span></div></section>
+        </div>
+        {!preview && <AccountReadyCard />}
+        <footer className="rw-footer"><span><ShieldCheck size={13} />Your effort. Your pace. Your possibilities.</span>{preview && completed.length > 0 && <button onClick={() => { setCompleted([]); setSuccess(null); }}><RotateCcw size={13} />Reset demo</button>}<span>Rewardly · Home preview</span></footer>
+      </main>
+    </div>
+    <BottomNavigation preview={preview} />
+    {currentPanel && <Modal title={currentPanel.title} onClose={() => setInfo(null)}><span className="rw-modal-hero-icon"><currentPanel.icon size={34} /></span><span className="rw-tag">{info === "notifications" ? "NOTIFICATIONS" : "FEATURE PREVIEW"}</span><h2>{currentPanel.title}</h2><p>{!preview && info === "withdraw" ? "Your wallet will show points, conversion rates, and eligible balances after the rewards module is connected. Withdrawals are not available yet." : currentPanel.description}</p><button className="rw-button rw-button-primary" onClick={() => setInfo(null)}>Got it <Check size={17} /></button></Modal>}
+    {selected && <Modal title={preview ? "Try a sample task" : "Upcoming task details"} onClose={closeTask}><span className={`rw-modal-hero-icon rw-category-${selected.category.toLowerCase()}`}><TaskIcon size={33} /></span><span className="rw-tag">{preview ? "INTERACTIVE DEMO · NO REAL REWARDS" : "COMING SOON"}</span><h2>{selected.title}</h2><p>{selected.description}</p><div className="rw-modal-reward"><span>{selected.minutes} min · {selected.category}</span><strong>{preview ? `+${selected.points} sample points` : "Reward to be announced"}</strong></div>{preview ? step === "details" ? <><ol className="rw-task-instructions"><li><span>1</span>Follow the task instructions.</li><li><span>2</span>Submit the required completion evidence.</li><li><span>3</span>Get verified and see your progress grow.</li></ol><div className="rw-demo-disclosure"><ShieldCheck size={17} /><p>This is a guided preview. No external task is performed and no real points are awarded.</p></div><button className="rw-button rw-button-primary" onClick={() => setStep("verify")}>Try the verification preview<ArrowRight size={17} /></button></> : <form onSubmit={verify} className="rw-verify-form"><label htmlFor="rw-demo-code">Demo completion code</label><p>Enter <code>DEMO150</code> to simulate an approved task.</p><input id="rw-demo-code" autoComplete="off" maxLength={20} value={code} onChange={event => setCode(event.target.value)} placeholder="Enter demo code" aria-describedby={claimError ? "rw-claim-error" : undefined} aria-invalid={!!claimError} required disabled={checking} />{claimError && <p className="rw-error" id="rw-claim-error" role="alert">{claimError}</p>}<button className="rw-button rw-button-primary" disabled={checking}>{checking ? <><span className="rw-spinner" />Simulating verification…</> : <>Complete demo +{selected.points} pts<ShieldCheck size={17} /></>}</button><span className="rw-fine-print">Only temporary sample data will change.</span></form> : <><div className="rw-demo-disclosure"><ShieldCheck size={17} /><p>Approved tasks, verification methods, and reward amounts will become available in the tasks module.</p></div><button className="rw-button rw-button-primary" onClick={closeTask}>Back to dashboard<ArrowRight size={17} /></button></>}</Modal>}
+    {success !== null && <ClaimSuccessModal points={success} onClose={() => { setSuccess(null); requestAnimationFrame(() => tasksRef.current?.focus({ preventScroll: true })); }} />}
+  </div>;
 }

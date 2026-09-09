@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./rewards.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Rewardly — Make your time count",
     description: "Small steps. Clear rewards. Explore Rewardly and create your account to start your journey.",
-    openGraph: { title: "Rewardly — A little effort. A little more.", description: "Make your time count.", images: [{ url: `${origin}/og.png`, width: 1536, height: 1024 }] },
-    twitter: { card: "summary_large_image", title: "Rewardly — Make your time count", images: [`${origin}/og.png`] },
+    openGraph: { title: "Rewardly — Find your next win.", description: "A little every day.", images: [{ url: `${origin}/og-rewards.png`, width: 1536, height: 1024 }] },
+    twitter: { card: "summary_large_image", title: "Rewardly — Find your next win", images: [`${origin}/og-rewards.png`] },
     robots: { index: false, follow: false },
   };
 }

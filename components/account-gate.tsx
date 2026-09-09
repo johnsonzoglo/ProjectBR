@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, type Profile } from "../lib/api";
-export function AccountGate({ children }: { children: (profile: Profile) => React.ReactNode }) {
+export function AccountGate({ children, loading }: { children: (profile: Profile) => React.ReactNode; loading?: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -14,6 +14,6 @@ export function AccountGate({ children }: { children: (profile: Profile) => Reac
     return () => { active = false; };
   }, []);
   if (error) return <div className="gate-state"><h1>We couldn’t open your account</h1><p role="alert">{error}</p><Link className="button dark" href="/login">Back to sign in</Link></div>;
-  if (!profile) return <div className="gate-state" aria-live="polite"><span className="loading-dot" /><p>Opening your workspace…</p></div>;
+  if (!profile) return loading || <div className="gate-state" aria-live="polite"><span className="loading-dot" /><p>Opening your workspace…</p></div>;
   return children(profile);
 }
