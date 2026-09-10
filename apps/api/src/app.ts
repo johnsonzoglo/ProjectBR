@@ -10,7 +10,7 @@ import { AdminController } from "./modules/users/admin.controller.js";
 import { RewardsController } from "./modules/rewards/rewards.controller.js";
 import { AdminRewardsController } from "./modules/rewards/admin-rewards.controller.js";
 import { PaymentsController } from "./modules/rewards/payments.controller.js";
-import { env } from "./config.js";
+import { env, trustedOrigins } from "./config.js";
 import { db } from "./database.js";
 
 @Controller("api/v1")
@@ -30,7 +30,7 @@ export async function createApp() {
     // Never trust client-supplied proxy headers. Configure a trusted edge before scaling.
     req.headers["x-forwarded-for"] = req.socket.remoteAddress || "127.0.0.1";
     delete req.headers["x-real-ip"];
-    if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && req.headers.origin !== env.APP_ORIGIN) {
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method) && (!req.headers.origin || !trustedOrigins.includes(req.headers.origin))) {
       res.status(403).json({ message: "Request origin is not allowed." }); return;
     }
     next();

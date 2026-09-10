@@ -8,6 +8,7 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   BETTER_AUTH_SECRET: z.string().min(32),
   APP_ORIGIN: z.string().url(),
+  APP_TRUSTED_ORIGINS: z.string().default("").transform(value => value.split(",").map(origin => origin.trim()).filter(Boolean)).refine(origins => origins.every(origin => z.string().url().safeParse(origin).success), "Every trusted origin must be a valid URL"),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   MAIL_MODE: z.enum(["file", "smtp"]).default("file"),
   MAIL_OUTBOX: z.string().default(".local/mail"),
@@ -18,6 +19,7 @@ const schema = z.object({
   SMTP_PASSWORD: z.string().optional(),
 });
 export const env = schema.parse(process.env);
+export const trustedOrigins = [...new Set([env.APP_ORIGIN, ...env.APP_TRUSTED_ORIGINS])];
 if (env.NODE_ENV === "production" && (env.MAIL_MODE !== "smtp" || !env.SMTP_HOST || !env.APP_ORIGIN.startsWith("https://"))) {
   throw new Error("Production requires HTTPS APP_ORIGIN and SMTP configuration.");
 }

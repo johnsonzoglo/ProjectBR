@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
 import { db } from "../../database.js";
-import { env } from "../../config.js";
+import { env, trustedOrigins } from "../../config.js";
 import { sendAccountEmail } from "./mail.js";
 
 export const auth = betterAuth({
@@ -10,7 +10,7 @@ export const auth = betterAuth({
   baseURL: env.APP_ORIGIN,
   basePath: "/api/v1/auth",
   secret: env.BETTER_AUTH_SECRET,
-  trustedOrigins: [env.APP_ORIGIN],
+  trustedOrigins,
   database: prismaAdapter(db, { provider: "postgresql", transaction: true }),
   emailAndPassword: {
     enabled: true,
