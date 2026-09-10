@@ -25,10 +25,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
   const origin = `${protocol}://${host}`;
   return {
-    title: "Rewardly — Make your spare time rewarding",
-    description: "Discover approved tasks, build verified points, and keep every reward clearly in view.",
-    openGraph: { title: "Make your spare time rewarding.", description: "Small steps. Clear rewards.", images: [{ url: `${origin}/og-landing.png`, width: 1536, height: 1024 }] },
-    twitter: { card: "summary_large_image", title: "Make your spare time rewarding.", images: [`${origin}/og-landing.png`] },
+    title: "Rewardly — Turn spare moments into something more",
+    description: "Complete straightforward online tasks, share what you know, and build clearly tracked rewards at your own pace.",
+    openGraph: { title: "Turn spare moments into something more.", description: "Small tasks. Real momentum.", images: [{ url: `${origin}/og.png`, width: 1536, height: 1024 }] },
+    twitter: { card: "summary_large_image", title: "Turn spare moments into something more.", images: [`${origin}/og.png`] },
     robots: { index: false, follow: false },
   };
 }

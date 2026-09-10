@@ -28,7 +28,7 @@ export function AuthForm({ mode, initialReferralCode = "" }: { mode: Mode; initi
     const origin = window.location.origin;
     try {
       if (mode === "register") {
-        await api("/auth/sign-up/email", { method: "POST", body: JSON.stringify({ name: values.get("name"), email, password, ...(referralCode.trim() ? { signupReferralCode: referralCode.trim() } : {}), callbackURL: `${origin}/login?verified=1` }) });
+        await api("/auth/sign-up/email", { method: "POST", credentials: "omit", body: JSON.stringify({ name: values.get("name"), email, password, ...(referralCode.trim() ? { signupReferralCode: referralCode.trim() } : {}), callbackURL: `${origin}/login?verified=1` }) });
         window.location.assign("/verify-email");
       } else if (mode === "login") {
         await api("/auth/sign-in/email", { method: "POST", body: JSON.stringify({ email, password, rememberMe: values.get("remember") === "on" }) });
@@ -38,7 +38,7 @@ export function AuthForm({ mode, initialReferralCode = "" }: { mode: Mode; initi
         await api("/auth/request-password-reset", { method: "POST", body: JSON.stringify({ email, redirectTo: `${origin}/reset-password` }) });
         setMessage("If an account exists, a reset link has been sent. Please check your inbox.");
       } else if (mode === "verify-email") {
-        await api("/auth/send-verification-email", { method: "POST", body: JSON.stringify({ email, callbackURL: `${origin}/login?verified=1` }) });
+        await api("/auth/send-verification-email", { method: "POST", credentials: "omit", body: JSON.stringify({ email, callbackURL: `${origin}/login?verified=1` }) });
         setMessage("If your account needs verification, a new link has been sent.");
       } else {
         const token = new URLSearchParams(window.location.search).get("token");

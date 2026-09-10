@@ -1,45 +1,339 @@
 import Link from "next/link";
-import { ArrowRight, Check, ClipboardCheck, Coins, Layers2, ShieldCheck, Sparkles, Star, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  Check,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  Coins,
+  Layers2,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 const steps = [
-  { number: "01", icon: ClipboardCheck, title: "Choose a task", copy: "Browse approved opportunities and pick one that fits your time." },
-  { number: "02", icon: ShieldCheck, title: "Complete & verify", copy: "Follow the instructions and submit the requested proof securely." },
-  { number: "03", icon: Coins, title: "Collect rewards", copy: "Track verified points and your complete reward history in one place." },
+  {
+    number: "01",
+    icon: ClipboardCheck,
+    title: "Pick what fits",
+    copy: "Browse clear, approved opportunities and choose a task that works with your day.",
+  },
+  {
+    number: "02",
+    icon: BriefcaseBusiness,
+    title: "Do the work",
+    copy: "Follow simple instructions, share your perspective, and submit the requested proof.",
+  },
+  {
+    number: "03",
+    icon: Coins,
+    title: "Watch it add up",
+    copy: "See verified points, deposits, and every reward update in one transparent wallet.",
+  },
+];
+
+const opportunities = [
+  {
+    icon: "✦",
+    category: "Quick feedback",
+    title: "Share a useful opinion",
+    time: "5–10 min",
+    reward: "+150 pts",
+  },
+  {
+    icon: "▶",
+    category: "Content review",
+    title: "Explore something new",
+    time: "10–15 min",
+    reward: "+300 pts",
+  },
+  {
+    icon: "✓",
+    category: "Product check",
+    title: "Test a simple experience",
+    time: "15–20 min",
+    reward: "+450 pts",
+  },
 ];
 
 export default function Home() {
-  return <main className="landing-page">
-    <header className="landing-nav">
-      <Link href="/" className="landing-brand" aria-label="Rewardly home"><span><Layers2 size={22} /></span>rewardly<i>.</i></Link>
-      <nav aria-label="Primary navigation"><a href="#how-it-works">How it works</a><a href="#why-rewardly">Why Rewardly</a></nav>
-      <div className="landing-nav-actions"><Link href="/login" className="landing-link">Sign in</Link><Link href="/register" className="landing-button landing-button-small">Get started<ArrowRight size={16} /></Link></div>
-    </header>
-    <section className="landing-hero">
-      <div className="landing-hero-copy">
-        <span className="landing-kicker"><Sparkles size={14} />A LITTLE TIME. REAL POSSIBILITY.</span>
-        <h1>Make your spare time <em>rewarding.</em></h1>
-        <p>Discover simple, approved tasks. Share your perspective, build your points, and keep every reward clearly in view.</p>
-        <div className="landing-hero-actions"><Link href="/register" className="landing-button">Start earning<ArrowRight size={18} /></Link><a href="#how-it-works" className="landing-button landing-button-ghost">See how it works</a></div>
-        <div className="landing-trust"><span><Check size={15} />Free to join</span><span><Check size={15} />Clear rewards</span><span><Check size={15} />Secure account</span></div>
-      </div>
-      <div className="landing-visual" aria-label="Example Rewardly account progress">
-        <span className="landing-orbit landing-orbit-one" /><span className="landing-orbit landing-orbit-two" />
-        <div className="landing-wallet-card"><div><span><Coins size={18} />YOUR REWARDS</span><small>VERIFIED</small></div><strong>12,450 <i>pts</i></strong><p>$124.50 reward value</p><div className="landing-wallet-progress"><span /></div></div>
-        <div className="landing-task-float"><span><ClipboardCheck size={20} /></span><div><small>QUICK TASK</small><strong>Share your opinion</strong></div><b>+150</b></div>
-        <div className="landing-proof-float"><ShieldCheck size={18} /><span><strong>Task verified</strong><small>Points added safely</small></span></div>
-        <span className="landing-spark landing-spark-one">✦</span><span className="landing-spark landing-spark-two">✦</span>
-      </div>
-    </section>
-    <section className="landing-proof-strip" aria-label="Rewardly benefits"><div><strong>One clear place</strong><span>Tasks, points, and progress</span></div><div><strong>Verified activity</strong><span>Transparent task status</span></div><div><strong>Built around you</strong><span>Move at your own pace</span></div></section>
-    <section className="landing-section" id="how-it-works">
-      <div className="landing-section-heading"><span className="landing-kicker">HOW IT WORKS</span><h2>Three small steps.<br />One rewarding routine.</h2><p>No complicated setup. Create your account and find your next little win.</p></div>
-      <div className="landing-steps">{steps.map(({ number, icon: Icon, title, copy }) => <article key={number}><div><span className="landing-step-icon"><Icon size={24} /></span><b>{number}</b></div><h3>{title}</h3><p>{copy}</p></article>)}</div>
-    </section>
-    <section className="landing-highlight" id="why-rewardly">
-      <div className="landing-highlight-art"><span className="landing-coin"><Layers2 size={58} /></span><span className="landing-mini-card"><Star size={16} fill="currentColor" /> Your effort counts</span></div>
-      <div><span className="landing-kicker"><Users size={14} />REWARDS THAT FEEL CLEAR</span><h2>Your progress should make sense.</h2><p>See what each task is worth, follow its verification status, and review your reward history without guesswork.</p><ul><li><ShieldCheck size={18} />Approved tasks with clear instructions</li><li><Coins size={18} />Visible point values and balances</li><li><ClipboardCheck size={18} />A complete record of your activity</li></ul></div>
-    </section>
-    <section className="landing-cta"><span className="landing-kicker">YOUR NEXT LITTLE WIN</span><h2>Ready to make your time count?</h2><p>Create your free Rewardly account and start exploring.</p><Link href="/register" className="landing-button landing-button-light">Create my account<ArrowRight size={18} /></Link><span className="landing-cta-spark">✦</span></section>
-    <footer className="landing-footer"><Link href="/" className="landing-brand"><span><Layers2 size={20} /></span>rewardly<i>.</i></Link><p>Small steps. Clear rewards.</p><div><Link href="/login">Sign in</Link><Link href="/register">Create account</Link></div></footer>
-  </main>;
+  return (
+    <main className="landing-page">
+      <header className="landing-nav">
+        <Link href="/" className="landing-brand" aria-label="Rewardly home">
+          <span>
+            <Layers2 size={22} />
+          </span>
+          rewardly<i>.</i>
+        </Link>
+        <nav aria-label="Primary navigation">
+          <a href="#opportunities">Opportunities</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#member-story">Member story</a>
+        </nav>
+        <div className="landing-nav-actions">
+          <Link href="/login" className="landing-link">
+            Sign in
+          </Link>
+          <Link
+            href="/register"
+            className="landing-button landing-button-small"
+          >
+            Join free
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </header>
+
+      <section className="landing-hero">
+        <div className="landing-hero-copy">
+          <span className="landing-kicker">
+            <Sparkles size={14} />
+            YOUR TIME HAS VALUE
+          </span>
+          <h1>
+            Turn spare moments into <em>something more.</em>
+          </h1>
+          <p>
+            Complete straightforward online tasks, share what you know, and
+            build rewards at your own pace—with every step clearly tracked.
+          </p>
+          <div className="landing-hero-actions">
+            <Link href="/register" className="landing-button">
+              Start earning free
+              <ArrowRight size={18} />
+            </Link>
+            <a
+              href="#opportunities"
+              className="landing-button landing-button-ghost"
+            >
+              Explore tasks
+            </a>
+          </div>
+          <div className="landing-community">
+            <span className="landing-avatar landing-avatar-one">J</span>
+            <span className="landing-avatar landing-avatar-two">A</span>
+            <span className="landing-avatar landing-avatar-three">M</span>
+            <div>
+              <strong>Built for everyday people</strong>
+              <small>Work when it works for you</small>
+            </div>
+          </div>
+        </div>
+        <div
+          className="landing-visual"
+          aria-label="People completing Rewardly tasks together"
+        >
+          <img
+            src="/rewardly-team-hero.png"
+            alt="A diverse team working together around a laptop"
+          />
+          <div className="landing-photo-shade" />
+          <div className="landing-wallet-card">
+            <div>
+              <span>
+                <Coins size={17} />
+                REWARD BALANCE
+              </span>
+              <small>THIS WEEK</small>
+            </div>
+            <strong>
+              12,450 <i>pts</i>
+            </strong>
+            <p>Progress you can actually see</p>
+            <div className="landing-wallet-progress">
+              <span />
+            </div>
+          </div>
+          <div className="landing-task-float">
+            <span>
+              <CheckCircle2 size={20} />
+            </span>
+            <div>
+              <small>JUST VERIFIED</small>
+              <strong>Feedback task</strong>
+            </div>
+            <b>+150</b>
+          </div>
+          <div className="landing-proof-float">
+            <TrendingUp size={18} />
+            <span>
+              <strong>Keep building</strong>
+              <small>One task at a time</small>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-proof-strip" aria-label="Rewardly benefits">
+        <div>
+          <strong>
+            <ShieldCheck size={18} />
+            Clear before you start
+          </strong>
+          <span>See instructions and reward value upfront</span>
+        </div>
+        <div>
+          <strong>
+            <Clock3 size={18} />
+            Made for spare time
+          </strong>
+          <span>Choose opportunities that fit your schedule</span>
+        </div>
+        <div>
+          <strong>
+            <Coins size={18} />
+            Every point accounted for
+          </strong>
+          <span>Follow your complete reward history</span>
+        </div>
+      </section>
+
+      <section className="landing-opportunities" id="opportunities">
+        <div className="landing-section-heading landing-heading-row">
+          <div>
+            <span className="landing-kicker">FRESH OPPORTUNITIES</span>
+            <h2>
+              Small tasks.
+              <br />
+              Real momentum.
+            </h2>
+          </div>
+          <p>
+            Start with something simple. Each approved task clearly shows what
+            to do, how long it may take, and what it is worth.
+          </p>
+        </div>
+        <div className="landing-opportunity-grid">
+          {opportunities.map((item) => (
+            <article key={item.title}>
+              <div className="landing-opportunity-top">
+                <span>{item.icon}</span>
+                <small>{item.category}</small>
+              </div>
+              <h3>{item.title}</h3>
+              <div>
+                <span>
+                  <Clock3 size={14} />
+                  {item.time}
+                </span>
+                <strong>{item.reward}</strong>
+              </div>
+            </article>
+          ))}
+        </div>
+        <Link href="/register" className="landing-text-link">
+          Create an account to see available tasks
+          <ArrowRight size={16} />
+        </Link>
+      </section>
+
+      <section className="landing-section" id="how-it-works">
+        <div className="landing-section-heading">
+          <span className="landing-kicker">HOW REWARDLY WORKS</span>
+          <h2>
+            A simple rhythm
+            <br />
+            that rewards effort.
+          </h2>
+          <p>
+            No complicated setup. Just choose, complete, and follow your
+            progress.
+          </p>
+        </div>
+        <div className="landing-steps">
+          {steps.map(({ number, icon: Icon, title, copy }) => (
+            <article key={number}>
+              <div>
+                <span className="landing-step-icon">
+                  <Icon size={24} />
+                </span>
+                <b>{number}</b>
+              </div>
+              <h3>{title}</h3>
+              <p>{copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-story" id="member-story">
+        <div className="landing-story-photo">
+          <img
+            src="/rewardly-member-story.png"
+            alt="A Rewardly member checking progress while working from home"
+          />
+          <div className="landing-story-badge">
+            <Star size={17} fill="currentColor" />
+            <span>
+              <strong>Time well spent</strong>
+              <small>Flexible by design</small>
+            </span>
+          </div>
+        </div>
+        <div className="landing-story-copy">
+          <span className="landing-kicker">
+            <Users size={14} />
+            MADE FOR REAL ROUTINES
+          </span>
+          <h2>Your day is already full. Rewardly fits around it.</h2>
+          <p>
+            Whether you have ten minutes between plans or a quiet hour in the
+            evening, you decide when to participate. Your dashboard keeps the
+            details organized so progress never feels vague.
+          </p>
+          <blockquote>
+            “I can see what each task needs before I begin—and exactly where my
+            rewards stand afterward.”
+          </blockquote>
+          <div className="landing-story-list">
+            <span>
+              <Check size={17} />
+              No fixed schedule
+            </span>
+            <span>
+              <Check size={17} />
+              Transparent task review
+            </span>
+            <span>
+              <Check size={17} />A secure personal account
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-cta">
+        <span className="landing-kicker">MAKE YOUR NEXT MOMENT COUNT</span>
+        <h2>
+          A little time can
+          <br />
+          go a long way.
+        </h2>
+        <p>Join Rewardly free and discover your next opportunity.</p>
+        <Link href="/register" className="landing-button landing-button-light">
+          Create my free account
+          <ArrowRight size={18} />
+        </Link>
+        <span className="landing-cta-coin landing-cta-coin-one">R</span>
+        <span className="landing-cta-coin landing-cta-coin-two">+</span>
+      </section>
+      <footer className="landing-footer">
+        <Link href="/" className="landing-brand">
+          <span>
+            <Layers2 size={20} />
+          </span>
+          rewardly<i>.</i>
+        </Link>
+        <p>Small steps. Clear rewards.</p>
+        <div>
+          <Link href="/login">Sign in</Link>
+          <Link href="/register">Create account</Link>
+        </div>
+      </footer>
+    </main>
+  );
 }
