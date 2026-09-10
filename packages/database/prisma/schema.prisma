@@ -17,11 +17,21 @@ model User {
   image         String?
   status        String    @default("active")
   referralCode  String    @unique @default(uuid())
+  signupReferralCode String?
+  withdrawalEligible Boolean @default(true)
+  withdrawalReason String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
   roles         UserRole[]
+  wallet        Wallet?
+  taskRuns      TaskRun[]
+  ledger        LedgerEntry[]
+  withdrawals   Withdrawal[]
+  deposits      Deposit[]
+  referralsSent Referral[] @relation("inviter")
+  referral      Referral? @relation("invitee")
   @@map("users")
 }
 
@@ -124,4 +134,167 @@ model AuditLog {
   @@index([createdAt])
   @@index([actorId])
   @@map("audit_logs")
+}
+
+model RewardSettings {
+  id String @id @default("default")
+  pointsPerUsd Int @default(1000)
+  minWithdrawalCents Int @default(100)
+  maxWithdrawalCents Int @default(100000)
+  referralRewardPoints Int @default(500)
+  referralRequiredTasks Int @default(1)
+  referralsEnabled Boolean @default(true)
+  @@map("reward_settings")
+}
+
+model Task {
+  id String @id @default(uuid())
+  title String
+  description String
+  instructions String
+  category String
+  rewardPoints Int
+  verification String
+  destinationUrl String?
+  active Boolean @default(true)
+  startsAt DateTime @default(now())
+  endsAt DateTime?
+  dailyLimit Int @default(100)
+  totalLimit Int @default(10000)
+  createdAt DateTime @default(now())
+  runs TaskRun[]
+  codes TaskCode[]
+  @@map("tasks")
+}
+
+model TaskRun {
+  id String @id @default(uuid())
+  userId String
+  taskId String
+  status String @default("in_progress")
+  rewardPoints Int
+  verification String
+  proof String?
+  reviewReason String?
+  startedAt DateTime @default(now())
+  submittedAt DateTime?
+  completedAt DateTime?
+  user User @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskId], references: [id])
+  @@unique([userId, taskId])
+  @@index([status])
+  @@map("task_runs")
+}
+
+model TaskCode {
+  id String @id @default(uuid())
+  taskId String
+  hash String @unique
+  usedByRunId String? @unique
+  createdAt DateTime @default(now())
+  task Task @relation(fields: [taskId], references: [id])
+  @@map("task_codes")
+}
+
+model Wallet {
+  userId String @id
+  points Int @default(0)
+  reservedPoints Int @default(0)
+  depositCents Int @default(0)
+  reservedDepositCents Int @default(0)
+  user User @relation(fields: [userId], references: [id])
+  @@map("wallets")
+}
+
+model LedgerEntry {
+  id String @id @default(uuid())
+  userId String
+  kind String
+  points Int
+  reservedPoints Int @default(0)
+  depositCents Int @default(0)
+  reservedDepositCents Int @default(0)
+  reference String @unique
+  description String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, createdAt])
+  @@map("ledger_entries")
+}
+
+model Withdrawal {
+  id String @id @default(uuid())
+  userId String
+  requestKey String
+  amountCents Int
+  source String @default("points")
+  points Int
+  pointsPerUsd Int
+  provider String
+  destination String
+  status String @default("pending")
+  reason String?
+  paymentReference String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id])
+  @@unique([userId, requestKey])
+  @@index([status])
+  @@map("withdrawals")
+}
+
+model PaymentMethod {
+  provider String @id
+  label String
+  enabled Boolean @default(false)
+  recipient String @default("")
+  network String @default("")
+  usdRateCents Int @default(0)
+  instructions String @default("")
+  minimumCents Int @default(100)
+  maximumCents Int @default(100000)
+  updatedAt DateTime @updatedAt
+  @@map("payment_methods")
+}
+
+model Deposit {
+  id String @id @default(uuid())
+  userId String
+  requestKey String
+  amountCents Int
+  provider String
+  methodLabel String
+  asset String?
+  network String?
+  cryptoAmount String?
+  usdRateCents Int?
+  recipient String
+  instructions String
+  status String @default("awaiting_payment")
+  paymentReference String?
+  proof String?
+  reviewReason String?
+  createdAt DateTime @default(now())
+  submittedAt DateTime?
+  reviewedAt DateTime?
+  user User @relation(fields: [userId], references: [id])
+  @@unique([userId, requestKey])
+  @@unique([provider, paymentReference])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("deposits")
+}
+
+model Referral {
+  id String @id @default(uuid())
+  inviterId String
+  inviteeId String @unique
+  rewardPoints Int
+  requiredTasks Int
+  qualifiedAt DateTime?
+  createdAt DateTime @default(now())
+  inviter User @relation("inviter", fields: [inviterId], references: [id])
+  invitee User @relation("invitee", fields: [inviteeId], references: [id])
+  @@index([inviterId])
+  @@map("referrals")
 }

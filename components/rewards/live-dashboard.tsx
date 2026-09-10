@@ -1,0 +1,19 @@
+"use client";
+import Link from "next/link";
+import { ArrowRight, ClipboardCheck, Coins, Users } from "lucide-react";
+import { Shell } from "../shell";
+import { AnimatedCounter } from "./primitives";
+import { RefreshButton, ResourceFeedback, useResource } from "./resource";
+import type { Profile } from "../../lib/api";
+import { money, points, taskStatus, type Referrals, type Task, type Wallet } from "../../lib/rewards";
+
+export function LiveDashboard({ profile }: { profile: Profile }) {
+  const wallet = useResource<Wallet>("/wallet"); const tasks = useResource<Task[]>("/tasks"); const referrals = useResource<Referrals>("/referrals");
+  const w = wallet.data;
+  async function refresh() { await Promise.all([wallet.refresh(), tasks.refresh(), referrals.refresh()]); }
+  return <Shell name={profile.user.name} admin={profile.permissions.includes("users.read")}><div className="page-heading"><div><span className="eyebrow">A LITTLE EVERY DAY.</span><h1>Welcome, {profile.user.name.split(" ")[0]}.</h1><p>Your latest progress, ready when you are.</p></div><RefreshButton busy={wallet.loading || tasks.loading || referrals.loading} onClick={refresh} /></div><ResourceFeedback {...wallet} retry={wallet.refresh} initial={!w} />
+    {w && <div className="rw-wallet-grid"><section className="rw-balance-card rw-live-balance"><div className="rw-balance-top"><span><Coins size={19} />YOUR REWARDS</span><span className="rw-tag">VERIFIED EARNINGS</span></div><div className="rw-earned"><AnimatedCounter value={w.points} /><small> pts</small></div><p>{money(w.usdCents)} USD equivalent · +{points(w.todayPoints)} pts today</p><div className="rw-live-balance-foot"><span>{money(w.withdrawableCents)} withdrawable</span><Link href="/wallet">Open rewards<ArrowRight size={15} /></Link></div></section><section className="panel rw-withdrawable"><span className="rw-panel-kicker">YOUR NEXT LITTLE WIN</span><h2>Keep your progress going.</h2><p>{tasks.data?.filter(t => t.run?.status === "approved").length || 0} tasks ready to claim. {tasks.data?.filter(t => t.run?.status === "pending_review").length || 0} submissions awaiting review.</p><Link href="/tasks" className="rw-button rw-button-primary">Explore tasks<ArrowRight size={16} /></Link></section></div>}
+    <section className="panel rw-history-panel"><div className="section-top"><div><span className="rw-panel-kicker">APPROVED OPPORTUNITIES</span><h2>Find your next task</h2></div><ClipboardCheck size={22} /></div><ResourceFeedback {...tasks} retry={tasks.refresh} initial={!tasks.data} />{tasks.data?.filter(t => t.run?.status !== "completed").slice(0, 4).map(task => <div className="rw-history-row" key={task.id}><span className="rw-module-icon"><ClipboardCheck size={20} /></span><div><strong>{task.title}</strong><small>{taskStatus(task)} · +{points(task.run?.rewardPoints || task.rewardPoints)} pts</small></div><Link href="/tasks" className="rw-button rw-button-secondary">Open<ArrowRight size={14} /></Link></div>)}{tasks.data && !tasks.data.some(t => t.run?.status !== "completed") && <p>You’re all caught up. Check Tasks for your completed history or new opportunities.</p>}<Link href="/tasks" className="rw-button rw-button-secondary rw-full">All tasks<ArrowRight size={16} /></Link></section>
+    <section className="panel rw-history-panel"><div className="section-top"><div><span className="rw-panel-kicker">GROW TOGETHER</span><h2>Bring your people.</h2></div><Users size={24} /></div><ResourceFeedback {...referrals} retry={referrals.refresh} initial={!referrals.data} />{referrals.data && <p>{referrals.data.qualified} qualified friends · {points(referrals.data.earningsPoints)} referral points earned.</p>}<Link href="/referrals" className="rw-button rw-button-secondary">Open referrals<ArrowRight size={16} /></Link></section>
+  </Shell>;
+}

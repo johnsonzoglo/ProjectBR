@@ -34,6 +34,7 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       status: { type: "string", defaultValue: "active", input: false },
+      signupReferralCode: { type: "string", required: false, input: true },
     },
   },
   rateLimit: {
@@ -55,7 +56,15 @@ export const auth = betterAuth({
       create: {
         before: async (user) => {
           if (user.name.trim().length < 2 || user.name.trim().length > 80) throw new APIError("BAD_REQUEST", { message: "Your name must contain 2 to 80 characters." });
-          return { data: { ...user, name: user.name.trim(), email: user.email.trim().toLowerCase() } };
+          const code = typeof user.signupReferralCode === "string" ? user.signupReferralCode.trim() : "";
+          if (code) {
+            const inviter = code.length <= 80 ? await db.user.findUnique({ where: { referralCode: code } }) : null;
+            const rules = await db.rewardSettings.findUnique({ where: { id: "default" } });
+            if (!rules?.referralsEnabled || !inviter || !inviter.emailVerified || inviter.status !== "active" || inviter.email === user.email.trim().toLowerCase()) {
+              throw new APIError("BAD_REQUEST", { message: "This referral code is invalid or unavailable. Check the code or remove it to register without a referral." });
+            }
+          }
+          return { data: { ...user, signupReferralCode: code || null, name: user.name.trim(), email: user.email.trim().toLowerCase() } };
         },
       },
     },

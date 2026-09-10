@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, Bell, Check, ChevronRight, Coins, Crown, Flame, Gift, Medal, Moon, Play, RotateCcw, ShieldCheck, Sparkles, Sun, Target, Trophy, UserRound, Users, Zap } from "lucide-react";
 import { api, type Profile } from "../lib/api";
 import { AchievementBadge, ClaimSuccessModal, Modal, ProgressRing, RewardCard, StreakCard } from "./rewards/primitives";
-import { AccountReadyCard, BalanceCard, DailyBonusCard, MembershipCard, TaskCard } from "./rewards/cards";
+import { AccountReadyCard, BalanceCard, DailyBonusCard, TaskCard } from "./rewards/cards";
 import { BottomNavigation, DesktopNavigation } from "./rewards/navigation";
 import { categories, previewTasks, categoryIcons, type Category, type PreviewTask } from "./rewards/data";
+import { useRewardTheme } from "./rewards/theme";
 
 type InfoPanel = "notifications" | "bonus" | "withdraw" | "level" | null;
 const panels = {
@@ -19,7 +20,7 @@ const panels = {
 export function Dashboard({ profile }: { profile?: Profile }) {
   const preview = !profile;
   const name = profile?.user.name || "explorer";
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const { theme, toggleTheme } = useRewardTheme();
   const [greeting, setGreeting] = useState("Hey there");
   const [category, setCategory] = useState<Category>("All");
   const [expanded, setExpanded] = useState(false);
@@ -39,15 +40,9 @@ export function Dashboard({ profile }: { profile?: Profile }) {
     const frame = requestAnimationFrame(() => {
       const hour = new Date().getHours();
       setGreeting(hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
-      try { if (localStorage.getItem("rewardly-theme") === "light") setTheme("light"); } catch { /* Theme preferences are optional. */ }
     });
     return () => { cancelAnimationFrame(frame); if (timer.current) clearTimeout(timer.current); };
   }, []);
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    try { localStorage.setItem("rewardly-theme", next); } catch { /* Continue without saving the preference. */ }
-  }
   async function logout() {
     setLogoutBusy(true); setError("");
     try { await api("/auth/sign-out", { method: "POST", body: "{}" }); window.location.assign("/login"); }
@@ -81,7 +76,7 @@ export function Dashboard({ profile }: { profile?: Profile }) {
     <a href="#rw-main" className="rw-skip-link">Skip to dashboard</a>
     <DesktopNavigation preview={preview} name={name} admin={!!profile?.permissions.includes("users.read")} onLogout={logout} busy={logoutBusy} />
     <div className="rw-main-wrap">
-      <header className="rw-header"><Link href={preview ? "/login" : "/profile"} className="rw-avatar rw-header-avatar" aria-label={preview ? "Sign in to your account" : "Your profile"}>{preview ? <UserRound size={25} /> : name.slice(0, 1).toUpperCase()}<span className="rw-avatar-online" /></Link><div className="rw-greeting"><span>LET’S MAKE TODAY COUNT</span><h1>{greeting}, <strong>{name.split(" ")[0]}.</strong><span className="rw-wave" aria-hidden="true">👋</span></h1><Link href={preview ? "/membership" : "/profile"} className="rw-member-chip">{preview ? <><Crown size={12} />Starter · preview</> : <><ShieldCheck size={12} />Verified account</>}<ChevronRight size={11} /></Link></div><div className="rw-header-actions"><button className="rw-icon-button rw-theme-toggle" aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} onClick={toggleTheme}>{theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}</button><button className="rw-icon-button rw-notification-button" onClick={() => setInfo("notifications")} aria-label="Open notifications"><Bell size={20} /></button></div></header>
+      <header className="rw-header"><Link href={preview ? "/login" : "/profile"} className="rw-avatar rw-header-avatar" aria-label={preview ? "Sign in to your account" : "Your profile"}>{preview ? <UserRound size={25} /> : name.slice(0, 1).toUpperCase()}<span className="rw-avatar-online" /></Link><div className="rw-greeting"><span>LET’S MAKE TODAY COUNT</span><h1>{greeting}, <strong>{name.split(" ")[0]}.</strong><span className="rw-wave" aria-hidden="true">👋</span></h1><Link href={preview ? "/register" : "/profile"} className="rw-member-chip">{preview ? <><Crown size={12} />Starter · preview</> : <><ShieldCheck size={12} />Verified account</>}<ChevronRight size={11} /></Link></div><div className="rw-header-actions"><button className="rw-icon-button rw-theme-toggle" aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} onClick={toggleTheme}>{theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}</button><button className="rw-icon-button rw-notification-button" onClick={() => setInfo("notifications")} aria-label="Open notifications"><Bell size={20} /></button></div></header>
       <main id="rw-main" className="rw-main">
         <div className="rw-preview-banner"><span className="rw-preview-icon"><Sparkles size={14} /></span><p>{preview ? <><strong>A sneak peek at your next chapter.</strong><span> Demo data. No real rewards.</span></> : <><strong>Your account is ready.</strong><span> Rewards features are coming soon.</span></>}</p>{preview ? <Link href="/register">Join Rewardly<ArrowUpRight size={15} /></Link> : <Link href="/profile">My account<ArrowUpRight size={15} /></Link>}</div>
         {error && <div role="alert" className="rw-error">{error}</div>}
@@ -92,7 +87,6 @@ export function Dashboard({ profile }: { profile?: Profile }) {
           <section className="rw-tasks-area" id="rw-tasks" ref={tasksRef} tabIndex={-1} aria-labelledby="rw-tasks-title"><div className="rw-task-section-heading"><div><span className="rw-overline">LITTLE EFFORT. REAL POSSIBILITY.</span><h2 id="rw-tasks-title">Find your next win<span className="rw-title-dot">.</span></h2><p>{preview ? "A few minutes. A fresh opportunity." : "A preview of the tasks we’re building."}</p></div><span className="rw-task-count">{preview ? `${previewTasks.length} previews` : "Coming soon"}</span></div><div className="rw-task-filters" role="group" aria-label="Filter preview tasks by category">{categories.map(item => <button key={item} className={item === category ? "is-active" : ""} aria-pressed={item === category} onClick={() => { setCategory(item); setExpanded(false); }}>{item === "All" && <Sparkles size={12} />}{item}</button>)}</div><div className="rw-tasks-grid" aria-live="polite">{visibleTasks.map(task => <TaskCard key={task.id} task={task} preview={preview} completed={completed.includes(task.id)} onStart={openTask} />)}</div>{category === "All" && <button className="rw-view-all" onClick={() => setExpanded(!expanded)}>{expanded ? "Show fewer previews" : "See all 6 task previews"}<ArrowRight size={15} /></button>}</section>
           <div className="rw-bonus-area"><DailyBonusCard onOpen={() => setInfo("bonus")} preview={preview} /></div>
           <RewardCard className="rw-journey-card"><div className="rw-section-title"><span className="rw-title-icon"><Trophy size={20} /></span><h2>Your little wins, celebrated</h2><button className="rw-icon-button" aria-label="About levels and achievements" onClick={() => setInfo("level")}><ArrowUpRight size={19} /></button></div><div className="rw-level-section"><span className="rw-level-icon"><Zap size={22} fill="currentColor" /></span><div className="rw-level-info"><div><strong>{preview ? "Level 4 · Go-getter" : "Your journey starts here"}</strong><span>{preview ? "650 / 1,000 XP" : "Levels coming soon"}</span></div><div className="rw-xp-track" role="progressbar" aria-label="Sample experience progress" aria-valuemin={0} aria-valuemax={1000} aria-valuenow={preview ? 650 : 0}><span style={{ width: preview ? "65%" : "0%" }} /></div><small>{preview ? "350 sample XP to your next level" : "Progress will follow the published qualification rules."}</small></div></div><div className="rw-achievements"><AchievementBadge icon={Zap} title="First steps" unlocked={preview || !!profile?.user.emailVerified} /><AchievementBadge icon={Flame} title="On a roll" unlocked={preview} /><AchievementBadge icon={Users} title="Better together" unlocked={false} /><AchievementBadge icon={Medal} title="Big dreamer" unlocked={false} /></div><span className="rw-fine-print">{preview ? "Sample levels, streaks, and achievements" : "Visual previews · achievement tracking is not active"}</span></RewardCard>
-          <div className="rw-membership-area"><MembershipCard preview={preview} /></div>
           <section className="rw-referral-teaser"><span className="rw-friends-icon"><Users size={27} /></span><div><span className="rw-overline">GOOD THINGS ARE BETTER SHARED</span><h2>Bring your people.</h2><p>More friends. More little wins together.</p></div><Link href="/referrals" className="rw-button rw-button-secondary">Explore referrals<ArrowUpRight size={16} /></Link><div className="rw-referral-decoration" aria-hidden="true"><span>✦</span><span>✦</span></div></section>
         </div>
         {!preview && <AccountReadyCard />}

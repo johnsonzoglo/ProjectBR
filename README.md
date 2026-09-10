@@ -1,6 +1,6 @@
 ﻿# Rewardly — Reward Task Platform
 
-Module 1: account foundation, authentication, permissions, and dashboard interface.
+Account foundation plus live tasks, rewards, withdrawal requests, and referrals. See [the module guide](docs/rewards-module.md) for local demo flows, endpoints, and operating rules.
 
 ## Run locally (Windows)
 
@@ -24,7 +24,7 @@ npm.cmd run dev:api
 npm.cmd run dev
 ```
 
-Open http://localhost:3000. The homepage is a clearly marked sample-data dashboard preview. Register at `/register`; the authenticated dashboard is `/dashboard`.
+Open http://localhost:3000 to view the public landing page. Register at `/register`; the authenticated dashboard is `/dashboard`.
 
 ## Local verification and password reset
 
@@ -67,9 +67,13 @@ The web frontend remains at the root to preserve the Sites starter; backend code
 
 ## Scope
 
-Implemented: register, verify, login/logout, recovery, profile, password changes, session revocation, configurable permissions, account status management, audit trail and responsive dashboard design.
+Implemented: register, verify, login/logout, recovery, profile, password changes, session revocation, configurable permissions, account status management, audit trail, responsive dashboards, task proof/code verification, point claims and ledger, manual deposits with receiving-method setup and proof review, withdrawals from earned points or deposited USD, and qualifying referral rewards.
 
-Upcoming: points ledger, tasks and verification, memberships, referrals, financial operations and provider adapters. Preview balances and activity are examples, not real rewards. Staff MFA, durable email retry, production edge rate limits and operational hardening remain required before a public financial launch.
+For deposit setup and the complete payment flow, see [docs/payments.md](docs/payments.md). User deposits live at `/payments`; admin receiving details and deposit review live at `/admin/payments`. Methods are disabled until an admin configures a real receiving destination. No provider moves funds automatically.
+
+Staff sign-in redirects to the dedicated `/admin` control center. Admin accounts cannot participate in tasks. The admin workspace provides separate sections for platform totals, user records and balances, task management, proof review, deposits and receiving wallets, withdrawal approvals, referrals, settings, and audit history. Manual balance or account changes require a recorded reason.
+
+Upcoming: memberships, external verification integrations, and automated payment provider adapters. The public Home preview remains sample data; signed-in Tasks, Rewards, Referrals, and Dashboard use the database. Withdrawals require manual operator payments and recorded references. Staff MFA, durable email retry, production edge rate limits and operational hardening remain required before a public financial launch.
 
 Stop only this project's database with:
 

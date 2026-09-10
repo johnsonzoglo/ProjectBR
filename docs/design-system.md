@@ -1,6 +1,6 @@
-# Rewardly mobile design system — Home Dashboard
+# Rewardly mobile design system
 
-Scope: `/` (interactive, explicitly labeled sample preview) and `/dashboard` (existing authenticated account). Other pages retain their original interface. No API, authentication, database, or financial behavior changes.
+Scope: all application screens, including Home, authentication, Tasks, Rewards, Referrals, Profile, Admin, getting started, loading/error states, and the not-found page. No API, authentication, database, or financial behavior changes.
 
 ## Tokens
 
@@ -23,16 +23,30 @@ Surfaces use 20–26px radii, one-pixel borders, restrained shadows, and a purpl
 
 ## Reusable components
 
-`AnimatedCounter`, `ProgressRing`, `RewardCard`, `BalanceCard`, `TaskCard`, `StreakCard`, `AchievementBadge`, `MembershipCard`, `DailyBonusCard`, `BottomNavigation`, `DashboardSkeleton`, `Modal`, and `ClaimSuccessModal` live in `components/rewards`.
+`AnimatedCounter`, `ProgressRing`, `RewardCard`, `BalanceCard`, `TaskCard`, `StreakCard`, `AchievementBadge`, `DailyBonusCard`, `BottomNavigation`, `DashboardSkeleton`, `Modal`, and `ClaimSuccessModal` live in `components/rewards`.
 
 ## Interactions
 
-- Category filters only filter preview task cards.
+- Category filters work on preview cards at Home and live task cards on Tasks.
 - Preview tasks open a native modal dialog with instructions and a clearly identified demo code. Simulating verification updates only ephemeral sample balances and sample progress; refresh resets the preview.
-- Live accounts show unavailable balances and upcoming features, never invented points, streaks, XP, membership tiers, or earnings.
+- Signed-in Tasks, Wallet, Referrals, Dashboard, and Profile use real account activity. Streaks, deposits, and membership benefits are not invented to match reference imagery.
 - Notification and daily-bonus buttons show honest feature information. No fake unread count or bonus claim.
 - Light/dark preference is the only value saved to localStorage. Account and reward data never use browser storage.
 - Counters animate on value changes; progress animates once; success confetti is finite. Reduced-motion disables animations, including count-up and smooth scrolling.
 - Native dialog handles focus trapping, Escape, and return focus. Controls expose accessible names; navigation marks the active page; balance animations have a stable screen-reader value.
 
-Next screen: Tasks, after review of the Home Dashboard.
+## Shared page implementation
+
+`components/shell.tsx` uses the same desktop sidebar and mobile bottom navigation as Home. The active navigation item follows the current route. The Home and other screens share `useRewardTheme` so theme changes carry across navigation, including login and recovery screens. Only theme preference is stored locally.
+
+`app/pages.css` applies the Home tokens to existing forms, cards, profile sessions, and admin lists. Admin table rows become cards below 1200px to keep the directory readable beside the desktop sidebar. Account-status edits use a focus-trapped dialog and retain the original API calls, permission checks, and required reason.
+
+Local development remains the delivery surface for this update.
+
+## Mobile reference update
+
+The supplied TaskPay screenshots inform the signed-in UI: pale lavender backgrounds, white rounded cards, blue wallet and profile panels, green success/reward badges, a deep-purple referral invitation, and a five-item bottom navigation (Home, Tasks, Wallet, Refer, Profile). Rewardly retains its own branding. The brand and Home links open Dashboard. Light mode is the default; an existing saved theme preference is respected.
+
+`app/reference-ui.css` layers this direction over the existing tokens, with responsive layouts and reduced-motion support. `components/rewards/task-tile.tsx` presents illustrated task banners using the original generated `public/images/reward-banner.png` artwork. Reward amounts and USD equivalents come from actual task rewards and the configured conversion rate; labels show verification and task state instead of fabricated durations or popularity counts.
+
+`components/rewards/account-points.tsx` shows the real points balance in the shared header. Successful API mutations broadcast a refresh event so visible account summaries stay current. Profile displays actual claimed-task totals and referral earnings, with links to existing wallet/referral flows. Wallet shows progress toward the configured minimum withdrawal and the three supported request methods; deposits, gift cards, and instant payouts were not added.

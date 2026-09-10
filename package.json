@@ -14,12 +14,14 @@
     "start": "vinext start",
     "dev:api": "tsx watch --tsconfig apps/api/tsconfig.json apps/api/src/main.ts",
     "build:api": "npm run build --workspace @reward/api",
-    "test": "tsx --tsconfig apps/api/tsconfig.json --test --test-concurrency=1 tests/auth.integration.test.ts",
+    "test": "tsx --tsconfig apps/api/tsconfig.json --test --test-concurrency=1 tests/auth.integration.test.ts tests/rewards.integration.test.ts",
+    "test:rewards": "tsx --tsconfig apps/api/tsconfig.json --test --test-concurrency=1 tests/rewards.integration.test.ts",
     "typecheck": "tsc --noEmit && npm run build:api",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:seed:demo-tasks": "tsx scripts/seed-demo-tasks.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

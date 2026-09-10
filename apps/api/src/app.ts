@@ -7,6 +7,9 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./modules/auth/auth.js";
 import { UsersController } from "./modules/users/users.controller.js";
 import { AdminController } from "./modules/users/admin.controller.js";
+import { RewardsController } from "./modules/rewards/rewards.controller.js";
+import { AdminRewardsController } from "./modules/rewards/admin-rewards.controller.js";
+import { PaymentsController } from "./modules/rewards/payments.controller.js";
 import { env } from "./config.js";
 import { db } from "./database.js";
 
@@ -16,7 +19,7 @@ class HealthController {
   async health() { await db.$queryRaw`SELECT 1`; return { status: "ok", module: "identity" }; }
 }
 
-@Module({ controllers: [HealthController, UsersController, AdminController] })
+@Module({ controllers: [HealthController, UsersController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
 class AppModule {}
 
 export async function createApp() {

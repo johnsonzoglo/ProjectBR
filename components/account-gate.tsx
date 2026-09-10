@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, type Profile } from "../lib/api";
+import { ThemeSurface } from "./rewards/theme";
+import { DashboardSkeleton } from "./rewards/dashboard-skeleton";
 export function AccountGate({ children, loading }: { children: (profile: Profile) => React.ReactNode; loading?: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState("");
@@ -13,7 +15,7 @@ export function AccountGate({ children, loading }: { children: (profile: Profile
     });
     return () => { active = false; };
   }, []);
-  if (error) return <div className="gate-state"><h1>We couldn’t open your account</h1><p role="alert">{error}</p><Link className="button dark" href="/login">Back to sign in</Link></div>;
-  if (!profile) return loading || <div className="gate-state" aria-live="polite"><span className="loading-dot" /><p>Opening your workspace…</p></div>;
+  if (error) return <ThemeSurface className="rw-state-surface"><div className="gate-state"><span className="rw-tag">ACCOUNT ACCESS</span><h1>We couldn’t open your account</h1><p role="alert">{error}</p><Link className="rw-button rw-button-primary" href="/login">Back to sign in</Link></div></ThemeSurface>;
+  if (!profile) return loading || <DashboardSkeleton />;
   return children(profile);
 }

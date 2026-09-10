@@ -1,42 +1,23 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowUpRight, ChartNoAxesCombined, CircleHelp, ClipboardCheck, Crown, LayoutDashboard, LogOut, Menu, Settings2, ShieldCheck, Users, Wallet, X } from "lucide-react";
-import { Brand } from "./brand";
+import { ArrowUpRight, Bell, Layers2, LogOut, ShieldCheck } from "lucide-react";
 import { api } from "../lib/api";
-const navigation = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Explore tasks", href: "/tasks", icon: ClipboardCheck },
-  { label: "My wallet", href: "/wallet", icon: Wallet },
-  { label: "Referrals", href: "/referrals", icon: Users },
-  { label: "Membership", href: "/membership", icon: Crown },
-];
+import { BottomNavigation, DesktopNavigation } from "./rewards/navigation";
+import { ThemeSurface, ThemeToggle } from "./rewards/theme";
+import { AccountPoints } from "./rewards/account-points";
+import { Modal } from "./rewards/primitives";
+const pageNames: Record<string, string> = { dashboard: "Dashboard", payments: "Deposits & payments", tasks: "Explore tasks", wallet: "Your rewards", referrals: "Your people", profile: "Your account", admin: "Admin workspace", "how-it-works": "Getting started" };
 export function Shell({ children, name, preview = false, admin = false }: { children: React.ReactNode; name?: string; preview?: boolean; admin?: boolean }) {
   const path = usePathname();
-  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notifications, setNotifications] = useState(false);
   async function logout() {
+    setBusy(true); setError("");
     try { await api("/auth/sign-out", { method: "POST", body: "{}" }); window.location.assign("/login"); }
-    catch (e) { setError((e as Error).message); }
+    catch (e) { setError((e as Error).message); setBusy(false); }
   }
-  return <div className="app-shell">
-    <button className="mobile-menu icon-button" aria-label="Open navigation" onClick={() => setOpen(true)}><Menu /></button>
-    {open && <button className="nav-scrim" aria-label="Close navigation" onClick={() => setOpen(false)} />}
-    <aside className={`sidebar ${open ? "open" : ""}`}>
-      <div className="sidebar-brand"><Brand /><button className="mobile-close icon-button" aria-label="Close navigation" onClick={() => setOpen(false)}><X /></button></div>
-      <div className="workspace"><span className="workspace-logo">R</span><span>Personal workspace<small>Your next opportunity</small></span><span className="workspace-dot" /></div>
-      <span className="nav-heading">WORKSPACE</span>
-      <nav aria-label="Main navigation">{navigation.map(({ label, href, icon: Icon }) => <Link key={href} href={href} onClick={() => setOpen(false)} className={`nav-link ${path === href || (preview && path === "/" && href === "/dashboard") ? "active" : ""}`}><Icon size={19} />{label}{href === "/tasks" && <span className="soon-dot" />}</Link>)}</nav>
-      <div className="sidebar-promo"><span className="promo-icon"><ChartNoAxesCombined size={22} /></span><strong>Small tasks.<br />Bigger possibilities.</strong><p>A little progress, every day.</p><Link href="/how-it-works">How rewards work <ArrowUpRight size={16} /></Link></div>
-      <nav className="bottom-nav" aria-label="Account navigation">
-        {admin && <Link className={`nav-link ${path === "/admin" ? "active" : ""}`} href="/admin"><ShieldCheck size={19} />Admin portal</Link>}
-        <Link className={`nav-link ${path === "/profile" ? "active" : ""}`} href="/profile"><Settings2 size={19} />Account settings</Link>
-        <Link className="nav-link" href="/how-it-works"><CircleHelp size={19} />Getting started</Link>
-      </nav>
-      <div className="sidebar-user"><span className="avatar">{name?.slice(0, 1).toUpperCase() || "G"}</span><span><strong>{name || "Guest explorer"}</strong><small>{preview ? "Preview workspace" : "Personal account"}</small></span>{preview ? <Link href="/login" aria-label="Sign in"><ArrowUpRight size={18} /></Link> : <button className="icon-button" aria-label="Sign out" onClick={logout}><LogOut size={17} /></button>}</div>
-      {error && <p role="alert" className="error-text">{error}</p>}
-    </aside>
-    <div className="main-wrap"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{path === "/" || path === "/dashboard" ? "Overview" : path.split("/")[1].replaceAll("-", " ")}</strong></div><div className="topbar-actions"><span className="build-tag"><i />Foundation release</span>{preview ? <Link href="/login" className="text-link">Sign in <ArrowUpRight size={16} /></Link> : <Link href="/profile" className="avatar small">{name?.slice(0, 1).toUpperCase() || "U"}</Link>}</div></header><main className="main-content">{children}</main><footer className="app-footer"><span>© {new Date().getFullYear()} Rewardly</span><span>Make your time count.</span></footer></div>
-  </div>;
+  return <ThemeSurface className="rw-inner-app"><a href="#rw-page-main" className="rw-skip-link">Skip to page content</a><DesktopNavigation preview={preview} name={name || "Explorer"} admin={admin} onLogout={logout} busy={busy} /><div className="rw-main-wrap"><header className="rw-header rw-page-header">{!preview && <AccountPoints />}<Link href={preview ? "/" : "/dashboard"} className="rw-header-brand" aria-label="Rewardly home"><span className="rw-page-brand"><Layers2 size={23} /></span><strong>Rewardly</strong></Link><div className="rw-page-breadcrumb"><span>YOUR REWARDLY WORLD</span><strong>{pageNames[path.split("/")[1]] || "Your workspace"}</strong></div><div className="rw-header-actions"><ThemeToggle /><button className="rw-icon-button rw-notification-button" aria-label="Open notifications" onClick={() => setNotifications(true)}><Bell size={21} /></button>{preview && <Link href="/login" className="rw-page-signin">Sign in<ArrowUpRight size={14} /></Link>}</div></header><main id="rw-page-main" className="rw-main rw-page-main">{error && <div role="alert" className="rw-error">{error}</div>}{children}<footer className="rw-footer"><span><ShieldCheck size={14} />Small steps. Clear rewards.</span>{!preview && <button disabled={busy} onClick={logout}><LogOut size={14} />{busy ? "Signing out…" : "Sign out"}</button>}<Link href="/how-it-works">How it works<ArrowUpRight size={13} /></Link></footer></main></div><BottomNavigation preview={preview} />{notifications && <Modal title="Notifications" onClose={() => setNotifications(false)}><span className="rw-modal-hero-icon"><Bell size={32} /></span><span className="rw-tag">NOTIFICATIONS</span><h2>You’re all caught up.</h2><p>Task approvals, reward updates, and account alerts will appear here when notifications launch.</p><button className="rw-button rw-button-primary" onClick={() => setNotifications(false)}>Got it</button></Modal>}</ThemeSurface>;
 }
