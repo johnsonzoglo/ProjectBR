@@ -74,6 +74,12 @@ Deposit balances, receiving-method configuration, proof review, and withdrawals 
 
 The three existing page files were replaced, signup was extended for referral attribution, and existing admin navigation links to reward operations. Existing authentication and profile behavior is retained.
 
+## Task proof images
+
+New task screenshots are saved as content-addressed files in `TASK_PROOF_DIR`, not as base64 values in PostgreSQL. The database keeps a short reference. Owners and staff with reward-management permission can view a proof through the authenticated `/api/v1/task-proofs/:runId` endpoint. Exact screenshot reuse in another round of the same task is rejected; reuse across accounts and unusually fast repeat submissions generate admin alerts without imposing a task timer.
+
+Set `TASK_PROOF_DIR` to a persistent, backed-up directory on the API host before deploying. Do not put it under a public web directory. After configuring it, migrate existing database images with `npx.cmd tsx --tsconfig apps/api/tsconfig.json scripts/migrate-task-proofs.ts`. Keep this directory when moving or restoring the API server. Old base64 proofs remain readable until migrated.
+
 ## Automated checks
 
 ```powershell

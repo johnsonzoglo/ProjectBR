@@ -20,8 +20,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "tsx scripts/seed.ts",
-    "db:seed:demo-tasks": "tsx scripts/seed-demo-tasks.ts"
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

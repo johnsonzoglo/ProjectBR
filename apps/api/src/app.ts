@@ -1,4 +1,7 @@
 import "reflect-metadata";
+import { PromotionsController } from "./modules/rewards/promotions.controller.js";
+import { ChatController } from "./modules/chat/chat.controller.js";
+import { NotificationsController } from "./modules/notifications/notifications.controller.js";
 import { Controller, Get, Module } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import express from "express";
@@ -19,7 +22,7 @@ class HealthController {
   async health() { await db.$queryRaw`SELECT 1`; return { status: "ok", module: "identity" }; }
 }
 
-@Module({ controllers: [HealthController, UsersController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
+@Module({ controllers: [PromotionsController, ChatController, NotificationsController, HealthController, UsersController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
 class AppModule {}
 
 export async function createApp() {
@@ -35,14 +38,16 @@ export async function createApp() {
     }
     next();
   });
-  const authPaths = new Set(["/sign-up/email", "/sign-in/email", "/sign-out", "/verify-email", "/send-verification-email", "/request-password-reset", "/reset-password", "/change-password", "/get-session"]);
+  const authPaths = new Set(["/email-otp/verify-email", "/sign-up/email", "/sign-in/email", "/sign-out", "/verify-email", "/send-verification-email", "/request-password-reset", "/reset-password", "/change-password", "/get-session"]);
   app.use("/api/v1/auth", (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!authPaths.has(req.path) && !/^\/reset-password\/[A-Za-z0-9_-]+$/.test(req.path)) {
       res.status(404).json({ message: "Endpoint not found." }); return;
     }
     next();
   }, toNodeHandler(auth));
-  app.use(express.json({ limit: "16kb" }));
+  // Ten product images can be submitted together. Each image is independently
+  // validated at 2 MB by the task schema; this only permits the combined form.
+  app.use(express.json({ limit: "32mb" }));
   await app.init();
   return app;
 }

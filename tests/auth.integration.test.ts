@@ -32,7 +32,7 @@ async function mail(to: string, subject: string) {
   const names = (await readdir(mailPath)).sort().reverse();
   for (const name of names) {
     const item = JSON.parse(await readFile(resolve(mailPath, name), "utf8"));
-    if (item.to === to && item.subject.includes(subject)) return item as { url: string };
+    if (item.to === to && item.subject.includes(subject)) return item as { url: string; otp: string };
   }
   throw new Error("Expected account email was not delivered to the test outbox");
 }
@@ -77,19 +77,29 @@ test("anonymous account access and cross-origin writes are denied", async () => 
   assert.equal((await request("/me", "GET", undefined, "")).status, 401);
   assert.equal((await request("/auth/sign-up/email", "POST", { email, name: "Member", password }, "", "https://untrusted.example")).status, 403);
 });
-test("registration hashes passwords, assigns only User, and requires verification", async () => {
+test("registration hashes passwords, assigns only User, and allows login before verification", async () => {
   const result = await request("/auth/sign-up/email", "POST", { email: "MEMBER@example.test", name: "Test Member", password, status: "active", role: "super_admin", callbackURL: `${origin}/login` }, "");
   assert.equal(result.status, 200, await result.clone().text());
   const user = await db.user.findUniqueOrThrow({ where: { email }, include: { accounts: true, roles: { include: { role: true } } } });
   userId = user.id; assert.equal(user.emailVerified, false);
   assert.deepEqual(user.roles.map(r => r.role.key), ["user"]);
   assert.notEqual(user.accounts[0].password, password); assert.ok(user.accounts[0].password!.length > 64);
-  assert.equal((await request("/auth/sign-in/email", "POST", { email, password }, "")).status, 403);
+  const beforeLoginEmails = (await readdir(mailPath)).length;
+  const unverifiedLogin = await request("/auth/sign-in/email", "POST", { email, password }, "");
+  assert.equal(unverifiedLogin.status, 200, await unverifiedLogin.clone().text());
+  assert.equal((await readdir(mailPath)).length, beforeLoginEmails, "Sign-in does not require or send email verification");
+  const beforeResendEmails = (await readdir(mailPath)).length;
+  assert.equal((await request("/auth/send-verification-email", "POST", { email, callbackURL: `${origin}/login?verified=1` }, "")).status, 200);
+  assert.equal((await readdir(mailPath)).length, beforeResendEmails + 1);
+  assert.match((await mail(email, "Verify")).otp, /^[0-9]{6}$/);
 });
 test("verification enables login and session cookies are HttpOnly", async () => {
-  const verification = new URL((await mail(email, "Verify")).url);
-  const response = await fetch(`${base}${verification.pathname}${verification.search}`, { redirect: "manual" });
-  assert.ok([200, 302].includes(response.status), await response.text());
+  const otp = (await mail(email, "Verify")).otp;
+  const wrong = otp === "000000" ? "111111" : "000000";
+  assert.equal((await request("/auth/email-otp/verify-email", "POST", { email, otp: wrong }, "")).status, 400);
+  const response = await request("/auth/email-otp/verify-email", "POST", { email, otp }, "");
+  assert.equal(response.status, 200, await response.text());
+  assert.equal((await request("/auth/email-otp/verify-email", "POST", { email, otp }, "")).status, 400);
   const login = await request("/auth/sign-in/email", "POST", { email, password }, "");
   assert.equal(login.status, 200, await login.clone().text());
   assert.match(login.headers.get("set-cookie") || "", /HttpOnly/i);
@@ -163,4 +173,26 @@ test("password recovery is rate limited", async () => {
     if (response.status === 429) limited = true;
   }
   assert.ok(limited, "Expected rate limiting after repeated recovery requests");
+});
+
+test("email codes expire, are hashed, and lock after repeated wrong guesses", async () => {
+  const to = "otp-security@example.test";
+  await request("/auth/sign-up/email", "POST", { email: to, name: "OTP Security", password }, "");
+  assert.equal((await request("/auth/send-verification-email", "POST", { email: to }, "")).status, 200);
+  const otp = (await mail(to, "Verify")).otp;
+  const rows = await db.verification.findMany();
+  assert.ok(rows.length);
+  assert.ok(rows.every(row => !row.value.startsWith(otp + ":")));
+  const wrong = otp === "000000" ? "111111" : "000000";
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await db.rateLimit.deleteMany();
+    assert.notEqual((await request("/auth/email-otp/verify-email", "POST", { email: to, otp: wrong }, "")).status, 200);
+  }
+  await db.rateLimit.deleteMany();
+  assert.notEqual((await request("/auth/email-otp/verify-email", "POST", { email: to, otp }, "")).status, 200);
+  await request("/auth/send-verification-email", "POST", { email: to }, "");
+  const fresh = (await mail(to, "Verify")).otp;
+  await db.verification.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
+  assert.notEqual((await request("/auth/email-otp/verify-email", "POST", { email: to, otp: fresh }, "")).status, 200);
+  assert.equal((await db.user.findUniqueOrThrow({ where: { email: to } })).emailVerified, false);
 });

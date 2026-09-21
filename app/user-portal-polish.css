@@ -1,0 +1,23 @@
+﻿/* User portal mobile and keyboard accessibility. */
+.user-neon .rw-wallet-next-step{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-block:16px}
+.user-neon .rw-wallet-next-step h2,.user-neon .rw-wallet-next-step p{margin:0}
+.user-neon .rw-deposit-history-link{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:#a7d7ff;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+.user-neon :where(button,a,input,textarea,select,summary):focus-visible{outline:3px solid #85caff;outline-offset:3px}
+.user-neon .rw-task-filters button,.user-neon .rw-button,.user-neon .rw-icon-button{min-height:44px}
+.user-neon .rw-history-row,.user-neon .rw-withdrawal-row{min-width:0;overflow-wrap:anywhere}
+@media(max-width:600px){
+ .user-neon .rw-wallet-grid,.user-neon .rw-module-stats,.user-neon .rw-form-columns{grid-template-columns:minmax(0,1fr)}
+ .user-neon .rw-wallet-hero,.user-neon .rw-deposit-summary,.user-neon .rw-wallet-next-step{padding:20px;min-width:0}
+ .user-neon .rw-wallet-hero-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;width:100%}
+ .user-neon .rw-wallet-hero-actions>*{width:100%;justify-content:center}
+ .user-neon .rw-deposit-summary{display:flex;flex-wrap:wrap;gap:14px}
+ .user-neon .rw-deposit-summary>div{min-width:0;flex:1 1 180px}
+ .user-neon .rw-deposit-summary>.rw-button{width:100%;justify-content:center}
+ .user-neon .rw-history-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px}
+ .user-neon .rw-history-row>b{font-size:13px;text-align:right}
+ .user-neon .rw-modal{max-width:calc(100vw - 20px);max-height:calc(100dvh - 24px);overflow:auto}
+ .user-neon .rw-product-answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .user-neon .rw-product-answers button{min-width:0;overflow-wrap:anywhere}
+}
+@media(max-width:360px){.user-neon .rw-product-answers{grid-template-columns:1fr}.user-neon .rw-history-row{grid-template-columns:32px minmax(0,1fr)}.user-neon .rw-history-row>b{grid-column:2;text-align:left}}
+@media(prefers-reduced-motion:reduce){.user-neon *, .user-neon *::before, .user-neon *::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}

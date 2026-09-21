@@ -59,6 +59,9 @@
 .rw-task-list-heading h2 { font-size:18px; font-weight:700; letter-spacing:-.3px; }.rw-task-list-heading h2>span { font-weight:500; }
 .rw-inner-app .rw-live-task-grid { grid-template-columns:minmax(0,1fr); gap:21px; }
 .rw-task-tile { display:flex; flex-direction:column; background:var(--rw-surface); border:1px solid var(--rw-border); border-radius:26px; overflow:hidden; box-shadow:0 2px 1px #27324220; min-width:0; animation:rw-arrive .25s ease-out; transition:box-shadow .2s,transform .2s; }
+.rw-task-opening { animation:rw-task-open .22s ease-out; }
+@keyframes rw-task-open { 0% { transform:scale(1); } 55% { transform:scale(.975) rotate(-.3deg); } 100% { transform:scale(1); } }
+@media (prefers-reduced-motion:reduce) { .rw-task-opening { animation:none; } }
 .rw-task-tile:hover { box-shadow:0 8px 23px #1c325018; transform:translateY(-2px); }
 .rw-task-art { position:relative; min-height:160px; display:flex; flex-direction:column; justify-content:space-between; padding:13px; isolation:isolate; overflow:hidden; background:#332371; }
 .rw-task-art::before { content:''; position:absolute; inset:0; z-index:-2; background:url('/images/reward-banner.png') 75% 50%/cover; }
@@ -76,6 +79,7 @@
 .rw-task-tile-body>p { font-size:14px; line-height:1.65; margin:0 0 19px; flex:1; }
 .rw-task-tile-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .rw-task-tile-actions>small { font-size:10px; color:var(--rw-text-secondary); }
+.rw-on-site-task { display:inline-flex; align-items:center; gap:5px; color:var(--rw-primary); font-size:11px; font-weight:650; margin:-8px 0 16px; }
 .rw-inner-app .rw-claimed-button { background:#e7f5ec; color:#197b3b; border:1px solid #bed9c7; }
 .rw-inner-app .rw-live-balance { background:#2b4975; border:0; border-radius:28px; box-shadow:none; padding:28px; }
 .rw-inner-app .rw-wallet-hero .rw-earned { font-size:48px; letter-spacing:-1px; margin:24px 0 9px; }

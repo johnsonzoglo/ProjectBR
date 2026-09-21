@@ -1,0 +1,4 @@
+"use client";
+export function TaskScheduleFields({ repeatHours, onChange }: { repeatHours: number | null; onChange: (repeatHours: number | null) => void }) {
+  return <fieldset className="rw-schedule-fields"><legend>Repeat schedule</legend><div className="rw-inline-actions">{[[0, "One time"], [24, "Daily"], [168, "Weekly"]].map(([hours, label]) => <button type="button" key={hours} className="rw-button rw-button-secondary" aria-pressed={(repeatHours || 0) === hours} onClick={() => onChange(Number(hours) || null)}>{label}</button>)}</div><label>Repeat every (hours)<input name="repeatHours" type="number" min={0} max={8760} step={1} required value={repeatHours || 0} onChange={e => onChange(Number(e.target.value) || null)} /><small>0 = one time. Rounds follow the start date. Total slots reset each round; daily slots use UTC. Existing participants must finish before starting another round.</small></label></fieldset>;
+}

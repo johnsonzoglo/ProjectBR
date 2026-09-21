@@ -1,12 +1,20 @@
+import { emailOTP } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
 import { db } from "../../database.js";
 import { env, trustedOrigins } from "../../config.js";
 import { sendAccountEmail } from "./mail.js";
+import { markReferralVerified, qualifyReferral, rewardTransaction } from "../rewards/service.js";
 
 export const auth = betterAuth({
   appName: "Rewardly",
+  plugins: [emailOTP({ otpLength: 6, expiresIn: 600, allowedAttempts: 5, storeOTP: "hashed", overrideDefaultEmailVerification: true, disableSignUp: true,
+    sendVerificationOTP: async ({ email, otp, type }) => {
+      if (type !== "email-verification") throw new Error("Unsupported verification purpose");
+      await sendAccountEmail(email, "Verify your Rewardly email", "", otp);
+    },
+  })],
   baseURL: env.APP_ORIGIN,
   basePath: "/api/v1/auth",
   secret: env.BETTER_AUTH_SECRET,
@@ -16,7 +24,8 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 12,
     maxPasswordLength: 128,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
+    autoSignIn: false,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => sendAccountEmail(user.email, "Reset your Rewardly password", url),
     onPasswordReset: async ({ user }) => {
@@ -24,10 +33,10 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: false,
+    sendOnSignIn: false,
     autoSignInAfterVerification: false,
     expiresIn: 3600,
-    sendVerificationEmail: async ({ user, url }) => sendAccountEmail(user.email, "Verify your Rewardly email", url),
   },
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24, cookieCache: { enabled: false } },
   verification: { storeIdentifier: "hashed" },
@@ -59,12 +68,20 @@ export const auth = betterAuth({
           const code = typeof user.signupReferralCode === "string" ? user.signupReferralCode.trim() : "";
           if (code) {
             const inviter = code.length <= 80 ? await db.user.findUnique({ where: { referralCode: code } }) : null;
-            const rules = await db.rewardSettings.findUnique({ where: { id: "default" } });
-            if (!rules?.referralsEnabled || !inviter || !inviter.emailVerified || inviter.status !== "active" || inviter.email === user.email.trim().toLowerCase()) {
+            const rules = await db.rewardSettings.upsert({ where: { id: "default" }, create: { id: "default" }, update: {} });
+            if (!rules?.referralsEnabled || !inviter || inviter.status !== "active" || inviter.email === user.email.trim().toLowerCase()) {
               throw new APIError("BAD_REQUEST", { message: "This referral code is invalid or unavailable. Check the code or remove it to register without a referral." });
             }
           }
           return { data: { ...user, signupReferralCode: code || null, name: user.name.trim(), email: user.email.trim().toLowerCase() } };
+        },
+      },
+      update: {
+        after: async (user) => {
+          if (user.emailVerified) {
+            await markReferralVerified(user.id);
+            await rewardTransaction(tx => qualifyReferral(tx, user.id));
+          }
         },
       },
     },

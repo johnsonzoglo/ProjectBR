@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { api } from "../../lib/api";
-export function useResource<T>(path: string) {
+export function useResource<T>(path: string, intervalMs = 30000) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -20,9 +20,9 @@ export function useResource<T>(path: string) {
     const focus = () => { if (!document.hidden) void refresh(); };
     window.addEventListener("focus", focus);
     window.addEventListener("rewardly:data-changed", focus);
-    const timer = window.setInterval(focus, 30000);
+    const timer = window.setInterval(focus, intervalMs);
     return () => { cancelled = true; invalidate(); window.removeEventListener("focus", focus); window.removeEventListener("rewardly:data-changed", focus); clearInterval(timer); };
-  }, [refresh, invalidate]);
+  }, [refresh, invalidate, intervalMs]);
   return { data, error, loading, refresh };
 }
 export function ResourceFeedback({ loading, error, retry, initial = false }: { loading: boolean; error: string; retry: () => void; initial?: boolean }) {

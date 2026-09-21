@@ -1,0 +1,4 @@
+"use client";
+import { useResource } from "./resource";
+type Promotion={id:string;title:string;description:string;imageUrl:string;destination:string;placement:string};
+export function PromotionBanners({placement}:{placement:"banner"|"ad"}){const data=useResource<Promotion[]>("/promotions");const items=data.data?.filter(p=>p.placement===placement)||[];if(!items.length)return null;return <section className={"promotion-strip promotion-"+placement} aria-label={placement==="ad"?"Advertisements":"Promotions"}>{items.map(p=><a key={p.id} href={p.destination} target={p.destination.startsWith("/")?undefined:"_blank"} rel="noopener noreferrer" className="promotion-art"><img src={p.imageUrl} alt="" loading="lazy" decoding="async"/><div><span>{placement==="ad"?"Advertisement":"Promotion"}</span><h2>{p.title}</h2>{p.description&&<p>{p.description}</p>}<strong>View offer &rarr;</strong></div></a>)}</section>;}

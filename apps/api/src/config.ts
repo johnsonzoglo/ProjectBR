@@ -12,6 +12,7 @@ const schema = z.object({
   API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   MAIL_MODE: z.enum(["file", "smtp"]).default("file"),
   MAIL_OUTBOX: z.string().default(".local/mail"),
+  TASK_PROOF_DIR: z.string().default(".local/task-proofs"),
   MAIL_FROM: z.string().default("Rewardly <noreply@example.com>"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),

@@ -1,4 +1,7 @@
-import { BadRequestException, ConflictException, Body, Controller, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import { BadRequestException, ConflictException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import { hashPassword } from "better-auth/crypto";
+import { auth } from "../auth/auth.js";
+import { env } from "../../config.js";
 import type { Request } from "express";
 import { z } from "zod";
 import { db } from "../../database.js";
@@ -7,17 +10,64 @@ import { postDepositLedger, postLedger, rewardTransaction, throttle } from "../r
 import { validate } from "../rewards/rewards.controller.js";
 
 const pagination = (input = "1") => Math.max(1, Math.min(10000, Math.floor(Number(input) || 1)));
-const userSelect = { id: true, name: true, email: true, status: true, emailVerified: true, withdrawalEligible: true, withdrawalReason: true, referralCode: true, createdAt: true, wallet: true, roles: { select: { role: { select: { name: true, key: true } } } } } as const;
+const userSelect = { deletedAt: true, id: true, name: true, email: true, status: true, emailVerified: true, withdrawalEligible: true, withdrawalReason: true, referralCode: true, createdAt: true, wallet: true, roles: { select: { role: { select: { name: true, key: true } } } } } as const;
 
 @Controller("api/v1/admin")
 export class AdminController {
+  @Post("users")
+  async createUser(@Req() req: Request, @Body() body: unknown) {
+    const { user: actor } = await requireUser(req, "users.manage");
+    await throttle(actor.id, "admin_create_user", 10);
+    const input = validate(z.object({ name: z.string().trim().min(2).max(80), email: z.string().trim().email().max(254).toLowerCase(), password: z.string().min(12).max(128), reason: z.string().trim().min(10).max(500) }).strict(), body);
+    const password = await hashPassword(input.password);
+    let created;
+    try {
+      created = await rewardTransaction(async tx => {
+        if (await tx.user.findUnique({ where: { email: input.email } })) throw new ConflictException("This email is already registered, including deleted accounts.");
+        // The registration trigger assigns the regular user role.
+        const user = await tx.user.create({ data: { name: input.name, email: input.email, emailVerified: false, wallet: { create: {} } }, select: userSelect });
+        await tx.account.create({ data: { userId: user.id, accountId: user.id, providerId: "credential", password } });
+        await tx.auditLog.create({ data: { actorId: actor.id, targetId: user.id, action: "user.created_by_admin", reason: input.reason } });
+        return user;
+      });
+    } catch (error) {
+      if ((error as { code?: string }).code === "P2002") throw new ConflictException("This email is already registered.");
+      throw error;
+    }
+    let verificationSent = true;
+    try { await auth.api.sendVerificationEmail({ body: { email: created.email, callbackURL: env.APP_ORIGIN + "/login?verified=1" } }); }
+    catch { verificationSent = false; }
+    return { user: created, verificationSent };
+  }
+
+  @Delete("users/:id")
+  async removeUser(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { user: actor } = await requireUser(req, "users.manage");
+    const data = validate(z.object({ email: z.string().trim().email().toLowerCase(), reason: z.string().trim().min(10).max(500) }).strict(), body);
+    return rewardTransaction(async tx => {
+      const target = await tx.user.findUnique({ where: { id }, include: { roles: { include: { role: true } } } });
+      if (!target || target.id === actor.id || target.roles.some(r => r.role.key !== "user")) throw new BadRequestException("Only regular user accounts can be deleted. You cannot delete yourself or staff.");
+      if (data.email !== target.email) throw new BadRequestException("Enter the user's email to confirm deletion.");
+      if (target.status === "deleted") return { success: true };
+      const payments = await tx.withdrawal.count({ where: { userId: id, status: { in: ["pending", "approved"] } } });
+      const deposits = await tx.deposit.count({ where: { userId: id, status: "pending_review" } });
+      if (payments || deposits) throw new ConflictException("Resolve this user's submitted deposits and open withdrawals before deleting the account.");
+      const cancelled = await tx.deposit.updateMany({ where: { userId: id, status: "awaiting_payment" }, data: { status: "cancelled", reviewReason: "Account deleted before payment proof was submitted", reviewedAt: new Date() } });
+      await tx.user.update({ where: { id }, data: { status: "deleted", deletedAt: new Date(), withdrawalEligible: false, withdrawalReason: "Account deleted by administrator" } });
+      await tx.session.deleteMany({ where: { userId: id } });
+      await tx.account.deleteMany({ where: { userId: id } });
+      await tx.auditLog.create({ data: { actorId: actor.id, targetId: id, action: "user.deleted", reason: data.reason, detail: { retainedHistory: true, cancelledDepositRequests: cancelled.count } } });
+      return { success: true };
+    });
+  }
+
   @Get("users")
   async users(@Req() req: Request, @Query("page") pageInput = "1", @Query("search") search = "", @Query("status") status = "all") {
     await requireUser(req, "users.read");
     const page = pagination(pageInput);
-    const filter = validate(z.enum(["all", "active", "suspended"]), status);
+    const filter = validate(z.enum(["all", "active", "suspended", "deleted"]), status);
     const term = search.trim().slice(0, 100);
-    const where = { ...(filter === "all" ? {} : { status: filter }), ...(term ? { OR: [{ name: { contains: term, mode: "insensitive" as const } }, { email: { contains: term, mode: "insensitive" as const } }] } : {}) };
+    const where = { ...(filter === "all" ? { status: { not: "deleted" } } : { status: filter }), ...(term ? { OR: [{ name: { contains: term, mode: "insensitive" as const } }, { email: { contains: term, mode: "insensitive" as const } }] } : {}) };
     const [items, total] = await db.$transaction([
       db.user.findMany({ where, skip: (page - 1) * 20, take: 20, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: userSelect }),
       db.user.count({ where }),
@@ -29,7 +79,7 @@ export class AdminController {
   async overview(@Req() req: Request) {
     await requireUser(req, "users.read"); await requireUser(req, "rewards.manage");
     const [users, suspended, unverified, tasks, reviews, withdrawals, deposits, balances, paid, referrals] = await db.$transaction([
-      db.user.count(), db.user.count({ where: { status: "suspended" } }), db.user.count({ where: { emailVerified: false } }), db.task.count({ where: { active: true } }), db.taskRun.count({ where: { status: "pending_review" } }), db.withdrawal.count({ where: { status: { in: ["pending", "approved"] } } }), db.deposit.count({ where: { status: "pending_review" } }), db.wallet.aggregate({ _sum: { points: true, depositCents: true, reservedPoints: true, reservedDepositCents: true } }), db.withdrawal.aggregate({ where: { status: "paid" }, _sum: { amountCents: true } }), db.referral.count(),
+      db.user.count({ where: { status: { not: "deleted" } } }), db.user.count({ where: { status: "suspended" } }), db.user.count({ where: { emailVerified: false, status: { not: "deleted" } } }), db.task.count({ where: { active: true } }), db.taskRun.count({ where: { status: "pending_review", user: { status: { not: "deleted" } } } }), db.withdrawal.count({ where: { status: { in: ["pending", "approved"] } } }), db.deposit.count({ where: { status: "pending_review" } }), db.wallet.aggregate({ _sum: { points: true, depositCents: true, reservedPoints: true, reservedDepositCents: true } }), db.withdrawal.aggregate({ where: { status: "paid" }, _sum: { amountCents: true } }), db.referral.count(),
     ]);
     return { users, suspended, unverified, tasks, reviews, withdrawals, deposits, balances: balances._sum, paidCents: paid._sum.amountCents || 0, referrals };
   }
@@ -60,7 +110,7 @@ export class AdminController {
     const data = validate(z.object({ name: z.string().trim().min(2).max(80), email: z.email().toLowerCase(), reason: z.string().trim().min(10).max(500) }).strict(), body);
     return rewardTransaction(async tx => {
       const target = await tx.user.findUnique({ where: { id }, include: { roles: { include: { role: true } } } });
-      if (!target || id === actor.id || target.roles.some(r => r.role.key !== "user")) throw new BadRequestException("Select a regular user account to edit.");
+      if (!target || target.status === "deleted" || id === actor.id || target.roles.some(r => r.role.key !== "user")) throw new BadRequestException("Select a regular user account to edit.");
       const duplicate = await tx.user.findUnique({ where: { email: data.email } });
       if (duplicate && duplicate.id !== id) throw new ConflictException("This email is already registered.");
       const changed = target.email !== data.email;
@@ -114,7 +164,7 @@ export class AdminController {
     if (!parsed.success || id === actor.id) throw new BadRequestException("A valid status and reason are required. You cannot change your own status.");
     await rewardTransaction(async (tx) => {
       const target = await tx.user.findUnique({ where: { id }, include: { roles: { include: { role: true } } } });
-      if (!target) throw new BadRequestException("User not found.");
+      if (!target || target.status === "deleted") throw new BadRequestException("User not found or deleted.");
       if (target.roles.some(({ role }) => role.key !== "user")) throw new BadRequestException("Staff account changes require a separate staff administration workflow.");
       await tx.user.update({ where: { id }, data: { status: parsed.data.status } });
       if (parsed.data.status === "suspended") await tx.session.deleteMany({ where: { userId: id } });

@@ -1,0 +1,63 @@
+/* Phone task layout: uploaded thumbnails, cinematic feature and compact controls. */
+@media(max-width:600px){
+.user-neon .task-board{width:100%;max-width:100%;padding-bottom:24px}
+.user-neon .rw-approval-notice{align-items:flex-start;flex-wrap:wrap;overflow-wrap:anywhere}
+.user-neon .rw-approval-notice>div{flex:1 1 220px;min-width:0}
+.user-neon .rw-approval-notice>.rw-button{min-height:44px;margin-left:auto}
+.user-neon .task-board>.page-heading{margin:0 0 10px;justify-content:flex-end;min-height:0}
+.user-neon .task-board>.page-heading>div{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.user-neon .task-board>.page-heading .rw-button{min-height:44px;font-size:12px;padding:9px 12px;background:transparent;border-color:#243b61}
+.user-neon .task-board .neon-reward-banner{min-height:0;padding:20px 18px;border-radius:18px;gap:10px;margin-bottom:15px}
+.user-neon .task-board .neon-reward-banner>div:first-child{flex:1;min-width:0}
+.user-neon .task-board .neon-reward-banner h2{font-size:26px;line-height:1.15;letter-spacing:-.6px;margin:0 0 9px}
+.user-neon .task-board .neon-reward-banner .eyebrow{display:none}
+.user-neon .task-board .neon-reward-banner p{font-size:11px;line-height:1.5;margin:0 0 12px}
+.user-neon .task-board .neon-reward-banner .rw-button{min-height:44px;padding:10px 12px;font-size:12px;border-radius:999px}
+.user-neon .task-board .neon-trophy{display:grid;flex:0 0 78px}
+.user-neon .task-board .neon-trophy>svg:first-child{height:95px}
+.user-neon .task-board .neon-spark{width:22px;height:22px;right:0;top:0}
+.user-neon .task-board .task-board-overview{display:none}
+.user-neon .task-board .task-board-tabs{gap:6px;padding:0 0 12px;margin:0;scrollbar-width:none}
+.user-neon .task-board .task-board-tabs button{font-size:12px;padding:10px 12px;min-height:44px;border-radius:10px;gap:5px}
+.user-neon .task-board .task-board-tabs span{font-size:9px;padding:2px 4px}
+.user-neon .task-board .rw-module-toolbar{margin:0 0 10px}
+.user-neon .task-board .rw-search{min-height:44px;border-radius:12px;padding:9px 12px}
+.user-neon .task-board .neon-categories{gap:8px;padding:0 0 14px;scrollbar-width:none}
+.user-neon .task-board .neon-categories button{flex:1 0 auto;min-width:76px;padding:10px 16px;min-height:44px;border-radius:999px;font-size:12px;white-space:nowrap}
+.user-neon .task-board .neon-categories button svg{display:none}
+.user-neon .task-board .neon-categories button.is-active{background:linear-gradient(110deg,#7956fa,#4b47f1);border-color:#8a72ff;box-shadow:none}
+.user-neon .task-board .featured-section{margin:4px 0 20px}
+.user-neon .task-board .featured-section>h2,.user-neon .task-board .rw-task-list-heading h2{font-size:19px;line-height:1.4;letter-spacing:-.3px;margin:0 0 12px}
+.user-neon .task-board .rw-task-list-heading{margin:0 0 8px;align-items:center;gap:8px}
+.user-neon .task-board .rw-task-list-heading h2{margin:0}
+.user-neon .task-board .rw-task-list-heading h2 span{font-size:12px;color:#a5b7de}
+.user-neon .task-board .rw-task-list-heading>.rw-reward-pill{display:none}
+.user-neon .task-board-grid{gap:10px}
+.user-neon .task-board .neon-task-row,.user-neon .task-board .neon-task-row:first-child{grid-template-columns:62px minmax(0,1fr) 82px;gap:11px;padding:10px;border-radius:16px;border-color:#263d64;background:linear-gradient(115deg,#14223c,#0d1832);box-shadow:none;align-items:center}
+.user-neon .task-board .neon-task-icon{width:62px;height:68px;border-radius:12px;box-shadow:none}
+.user-neon .task-board .neon-task-icon img{object-fit:cover;object-position:center}
+.user-neon .task-board .neon-task-copy h2{font-size:14px;font-weight:650;line-height:1.35;letter-spacing:-.2px;margin:0 0 6px}
+.user-neon .task-board .neon-task-label{display:none}
+.user-neon .task-board .neon-task-copy p{font-size:11px;line-height:1.45;color:#aabfe7;-webkit-line-clamp:2}
+.user-neon .task-board .neon-task-meta{margin-top:6px;font-size:9px}
+.user-neon .task-board .neon-task-meta>span:not(:first-child){display:none}
+.user-neon .task-board .neon-task-reward{grid-column:auto;flex-direction:column;gap:7px;align-items:stretch;padding:0;min-width:0}
+.user-neon .task-board .neon-task-reward strong{padding:4px 2px;background:transparent;font-size:16px;gap:5px;white-space:normal;overflow-wrap:anywhere;flex-wrap:wrap}
+.user-neon .task-board .neon-task-reward strong svg{width:17px;height:17px;flex-shrink:0}
+.user-neon .task-board .neon-task-reward .rw-button{font-size:12px;line-height:1.2;padding:9px 10px;min-height:44px;border-radius:12px;gap:5px;background:linear-gradient(115deg,#8259ff,#5043ee);white-space:normal}
+.user-neon .task-board .neon-task-reward .rw-claimed-button{background:#163b38;color:#8be4c4}
+.user-neon .task-board .neon-task-row.is-featured,.user-neon .task-board .neon-task-row.is-featured:first-child{grid-template-columns:42% minmax(0,1fr);grid-template-rows:auto auto;gap:0 13px;padding:8px;border-radius:18px;background:linear-gradient(120deg,#172c4c,#141b3c);border-color:#364876;align-items:stretch}
+.user-neon .task-board .is-featured .neon-task-icon{grid-column:1;grid-row:1/3;width:100%;height:100%;min-height:180px;border-radius:12px}
+.user-neon .task-board .is-featured .neon-task-copy{grid-column:2;padding:12px 5px 0 0;align-self:start}
+.user-neon .task-board .is-featured .neon-task-copy h2{font-size:17px;line-height:1.25;margin-bottom:8px}
+.user-neon .task-board .is-featured .neon-task-copy p{font-size:12px;line-height:1.5;-webkit-line-clamp:3}
+.user-neon .task-board .is-featured .neon-task-meta{display:none}
+.user-neon .task-board .is-featured .neon-task-reward{grid-column:2;flex-direction:column;align-items:stretch;padding:8px 5px 8px 0;gap:8px;justify-content:flex-end}
+.user-neon .task-board .is-featured .neon-task-reward strong{justify-content:flex-start;font-size:21px}
+.user-neon .task-board .is-featured .neon-task-reward .rw-button{max-width:none;width:100%;font-size:12px;min-height:44px}
+.user-neon .task-board .rw-repeat-info{max-width:100%;overflow-wrap:anywhere;padding:6px;font-size:11px}
+.user-neon .task-board .rw-repeat-info svg{width:12px}
+.user-neon .rw-bottom-nav{padding-bottom:env(safe-area-inset-bottom);min-height:76px}
+.user-neon .floating-support{right:16px;bottom:calc(92px + env(safe-area-inset-bottom));width:54px;min-width:54px;height:54px;min-height:54px}
+}
+@media(max-width:360px){.user-neon .task-board .neon-task-row,.user-neon .task-board .neon-task-row:first-child{grid-template-columns:50px minmax(0,1fr) 74px;gap:8px}.user-neon .task-board .neon-task-icon{width:50px;height:60px}.user-neon .task-board .neon-task-copy h2{font-size:13px}.user-neon .task-board .neon-task-reward strong{font-size:14px}.user-neon .task-board .neon-task-reward .rw-button{font-size:11px;padding:8px 5px}.user-neon .task-board .neon-task-row.is-featured,.user-neon .task-board .neon-task-row.is-featured:first-child{grid-template-columns:40% minmax(0,1fr);gap:0 10px}.user-neon .task-board .is-featured .neon-task-icon{width:100%;height:100%}.user-neon .task-board .is-featured .neon-task-copy h2{font-size:15px}.user-neon .task-board .neon-reward-banner h2{font-size:23px}.user-neon .task-board .neon-trophy{flex-basis:60px}}

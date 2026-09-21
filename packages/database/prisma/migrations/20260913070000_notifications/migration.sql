@@ -1,0 +1,1 @@
+CREATE TABLE "notification_reads" ("userId" TEXT NOT NULL REFERENCES "users"("id") ON DELETE CASCADE, "key" TEXT NOT NULL, "readAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY ("userId", "key"));

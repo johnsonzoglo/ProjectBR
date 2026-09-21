@@ -11,7 +11,7 @@ export async function requireUser(req: Request, permission?: string) {
     where: { id: session.user.id },
     include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } },
   });
-  if (!user || user.status !== "active" || !user.emailVerified) throw new ForbiddenException("An active, verified account is required.");
+  if (!user || user.status !== "active") throw new ForbiddenException("An active account is required.");
   const permissions = [...new Set(user.roles.flatMap(({ role }) => role.permissions.map(({ permission }) => permission.key)))];
   if (permission && !permissions.includes(permission)) throw new ForbiddenException("You do not have access to this action.");
   return { user, permissions, sessionId: session.session.id };

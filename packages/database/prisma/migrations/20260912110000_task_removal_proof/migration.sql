@@ -1,0 +1,2 @@
+ALTER TABLE tasks ADD COLUMN "removedAt" TIMESTAMP(3);
+ALTER TABLE task_runs ADD COLUMN "proofImage" TEXT;

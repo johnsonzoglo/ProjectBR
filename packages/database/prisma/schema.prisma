@@ -16,6 +16,7 @@ model User {
   emailVerified Boolean   @default(false)
   image         String?
   status        String    @default("active")
+  deletedAt     DateTime?
   referralCode  String    @unique @default(uuid())
   signupReferralCode String?
   withdrawalEligible Boolean @default(true)
@@ -28,6 +29,7 @@ model User {
   wallet        Wallet?
   taskRuns      TaskRun[]
   ledger        LedgerEntry[]
+  memberships   MembershipPurchase[]
   withdrawals   Withdrawal[]
   deposits      Deposit[]
   referralsSent Referral[] @relation("inviter")
@@ -137,17 +139,23 @@ model AuditLog {
 }
 
 model RewardSettings {
+  depositsEnabled Boolean @default(true)
+  withdrawalsEnabled Boolean @default(true)
   id String @id @default("default")
   pointsPerUsd Int @default(1000)
   minWithdrawalCents Int @default(100)
   maxWithdrawalCents Int @default(100000)
   referralRewardPoints Int @default(500)
   referralRequiredTasks Int @default(1)
+  minWithdrawalReferrals Int @default(0)
   referralsEnabled Boolean @default(true)
   @@map("reward_settings")
 }
 
 model Task {
+  coverImage String?
+  coverVersion String?
+  featured Boolean @default(false)
   id String @id @default(uuid())
   title String
   description String
@@ -155,7 +163,16 @@ model Task {
   category String
   rewardPoints Int
   verification String
+  taskType String @default("standard")
+  surveyQuestions Json @default("[]")
+  completedVisibleHours Int @default(24)
+  repeatHours Int?
+  autoClaimOnVerification Boolean @default(false)
+  autoClaimOnApproval Boolean @default(false)
+  removedAt DateTime?
   destinationUrl String?
+  requiresMembership Boolean @default(false)
+  membershipPlanId String?
   active Boolean @default(true)
   startsAt DateTime @default(now())
   endsAt DateTime?
@@ -164,6 +181,9 @@ model Task {
   createdAt DateTime @default(now())
   runs TaskRun[]
   codes TaskCode[]
+  products TaskProduct[]
+  membershipPlan MembershipPlan? @relation(fields: [membershipPlanId], references: [id])
+  @@index([membershipPlanId])
   @@map("tasks")
 }
 
@@ -174,6 +194,12 @@ model TaskRun {
   status String @default("in_progress")
   rewardPoints Int
   verification String
+  round Int @default(0)
+  autoClaimOnVerification Boolean @default(false)
+  autoClaimOnApproval Boolean @default(false)
+  surveyAnswers Json?
+  rating Int?
+  proofImage String?
   proof String?
   reviewReason String?
   startedAt DateTime @default(now())
@@ -181,9 +207,37 @@ model TaskRun {
   completedAt DateTime?
   user User @relation(fields: [userId], references: [id])
   task Task @relation(fields: [taskId], references: [id])
-  @@unique([userId, taskId])
+  productAnswers ProductAnswer[]
+  @@unique([userId, taskId, round])
   @@index([status])
   @@map("task_runs")
+}
+
+model TaskProduct {
+  id String @id @default(uuid())
+  taskId String
+  name String
+  description String
+  imageUrl String?
+  position Int
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  answers ProductAnswer[]
+  @@unique([taskId, position])
+  @@index([taskId])
+  @@map("task_products")
+}
+
+model ProductAnswer {
+  id String @id @default(uuid())
+  runId String
+  productId String
+  answer Boolean
+  createdAt DateTime @default(now())
+  run TaskRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  product TaskProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  @@unique([runId, productId])
+  @@index([runId])
+  @@map("product_answers")
 }
 
 model TaskCode {
@@ -206,6 +260,51 @@ model Wallet {
   @@map("wallets")
 }
 
+model MembershipPlan {
+  id String @id @default(uuid())
+  key String @unique
+  name String
+  description String @default("")
+  priceCents Int
+  durationDays Int?
+  earningPotentialCents Int @default(0)
+  minimumReferrals Int @default(0)
+  minimumCompletedTasks Int @default(0)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  purchases MembershipPurchase[]
+  tasks Task[]
+  accessGrants MembershipPlanAccess[] @relation("grantorPlan")
+  accessReceived MembershipPlanAccess[] @relation("targetPlan")
+  @@map("membership_plans")
+}
+
+model MembershipPlanAccess {
+  grantorPlanId String
+  targetPlanId String
+  grantorPlan MembershipPlan @relation("grantorPlan", fields: [grantorPlanId], references: [id], onDelete: Cascade)
+  targetPlan MembershipPlan @relation("targetPlan", fields: [targetPlanId], references: [id], onDelete: Cascade)
+  @@id([grantorPlanId, targetPlanId])
+  @@map("membership_plan_access")
+}
+
+model MembershipPurchase {
+  id String @id @default(uuid())
+  userId String
+  planId String
+  priceCents Int
+  bonusCents Int @default(0)
+  source String @default("deposit")
+  status String @default("active")
+  startedAt DateTime @default(now())
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id])
+  plan MembershipPlan @relation(fields: [planId], references: [id])
+  @@index([userId, status])
+  @@map("membership_purchases")
+}
+
 model LedgerEntry {
   id String @id @default(uuid())
   userId String
@@ -223,6 +322,7 @@ model LedgerEntry {
 }
 
 model Withdrawal {
+  mobileNumber String?
   id String @id @default(uuid())
   userId String
   requestKey String
@@ -239,6 +339,7 @@ model Withdrawal {
   updatedAt DateTime @updatedAt
   user User @relation(fields: [userId], references: [id])
   @@unique([userId, requestKey])
+  @@unique([paymentReference])
   @@index([status])
   @@map("withdrawals")
 }
@@ -258,6 +359,7 @@ model PaymentMethod {
 }
 
 model Deposit {
+  mobileNumber String?
   id String @id @default(uuid())
   userId String
   requestKey String
@@ -273,6 +375,7 @@ model Deposit {
   status String @default("awaiting_payment")
   paymentReference String?
   proof String?
+  proofImage String?
   reviewReason String?
   createdAt DateTime @default(now())
   submittedAt DateTime?
@@ -291,10 +394,65 @@ model Referral {
   inviteeId String @unique
   rewardPoints Int
   requiredTasks Int
+  verifiedAt DateTime?
   qualifiedAt DateTime?
   createdAt DateTime @default(now())
   inviter User @relation("inviter", fields: [inviterId], references: [id])
   invitee User @relation("invitee", fields: [inviteeId], references: [id])
   @@index([inviterId])
   @@map("referrals")
+}
+
+model NotificationRead {
+ userId String
+ key String
+ readAt DateTime @default(now())
+ @@id([userId, key])
+ @@map("notification_reads")
+}
+
+model ChatConversation {
+ id String @id @default(uuid())
+ userId String @unique
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ messages ChatMessage[]
+ reads ChatRead[]
+ @@map("chat_conversations")
+}
+model ChatMessage {
+ id Int @id @default(autoincrement())
+ conversationId String
+ senderId String
+ senderName String
+ fromStaff Boolean
+ body String
+ requestKey String
+ createdAt DateTime @default(now())
+ conversation ChatConversation @relation(fields:[conversationId],references:[id],onDelete:Cascade)
+ @@unique([senderId,requestKey])
+ @@index([conversationId,id])
+ @@map("chat_messages")
+}
+model ChatRead {
+ conversationId String
+ userId String
+ lastReadId Int @default(0)
+ conversation ChatConversation @relation(fields:[conversationId],references:[id],onDelete:Cascade)
+ @@id([conversationId,userId])
+ @@map("chat_reads")
+}
+
+model Promotion {
+ id String @id @default(uuid())
+ title String
+ description String
+ image String
+ destination String
+ placement String @default("banner")
+ active Boolean @default(true)
+ startsAt DateTime @default(now())
+ endsAt DateTime?
+ updatedAt DateTime @updatedAt
+ @@map("promotions")
 }

@@ -1,0 +1,28 @@
+import { BadRequestException, Body, ConflictException, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query, Req } from "@nestjs/common";
+import type { Request } from "express";
+import { z } from "zod";
+import { db } from "../../database.js";
+import { requireUser } from "../permissions/access.js";
+import { validate } from "../rewards/rewards.controller.js";
+import { throttle } from "../rewards/service.js";
+const pageNumber=(value="1")=>Math.max(1,Math.min(10000,Math.floor(Number(value)||1)));
+async function access(req:Request,id:string){const actor=await requireUser(req);const conversation=await db.chatConversation.findUnique({where:{id}});if(!conversation||(!actor.permissions.includes("chat.manage")&&conversation.userId!==actor.user.id))throw new NotFoundException("Conversation not found.");return {...actor,conversation};}
+@Controller("api/v1/chat")
+export class ChatController {
+ @Get("conversations") async list(@Req() req:Request,@Query("page") input="1",@Query("search") search=""){
+  const {user,permissions}=await requireUser(req);const staff=permissions.includes("chat.manage");const page=pageNumber(input);
+  const matching=staff&&search.trim()?await db.user.findMany({where:{OR:[{name:{contains:search.trim().slice(0,100),mode:"insensitive"}},{email:{contains:search.trim().slice(0,100),mode:"insensitive"}}]},select:{id:true}}):null;
+  const where=staff?(matching?{userId:{in:matching.map(u=>u.id)}}:{}):{userId:user.id};
+  const [rows,total]=await db.$transaction([db.chatConversation.findMany({where,orderBy:[{updatedAt:"desc"},{id:"desc"}],skip:(page-1)*20,take:20,include:{messages:{orderBy:{id:"desc"},take:1},reads:{where:{userId:user.id}}}}),db.chatConversation.count({where})]);
+  const users=await db.user.findMany({where:{id:{in:rows.map(r=>r.userId)}},select:{id:true,name:true,email:true}});
+  const items=await Promise.all(rows.map(async row=>({id:row.id,userId:row.userId,name:staff?users.find(u=>u.id===row.userId)?.name||"User":"Support team",email:staff?users.find(u=>u.id===row.userId)?.email:undefined,lastMessage:row.messages[0]?.body||"No messages yet",updatedAt:row.updatedAt,unread:await db.chatMessage.count({where:{conversationId:row.id,senderId:{not:user.id},id:{gt:row.reads[0]?.lastReadId||0}}})})));
+  return {items,total,page};
+ }
+ @Post("conversations") async create(@Req() req:Request,@Body() body:unknown){const {user,permissions}=await requireUser(req);const input=validate(z.object({email:z.string().trim().email().toLowerCase().optional()}).strict(),body);if(input.email&&!permissions.includes("chat.manage"))throw new ForbiddenException("Only support staff can choose another user.");await throttle(user.id,"chat_open",10);const target=input.email?await db.user.findUnique({where:{email:input.email},include:{roles:{include:{role:true}}}}):user;if(!target||target.status!=="active")throw new BadRequestException("Choose an active user.");if(target.roles.some(r=>r.role.key!=="user"))throw new BadRequestException("Support conversations must belong to a regular user.");return db.chatConversation.upsert({where:{userId:target.id},create:{userId:target.id},update:{}});}
+ @Get("conversations/:id/messages") async messages(@Req() req:Request,@Param("id") id:string,@Query("page") input="1") {const actor=await access(req,id);const page=pageNumber(input);const [items,total]=await db.$transaction([db.chatMessage.findMany({where:{conversationId:id},orderBy:{id:"desc"},skip:(page-1)*50,take:50}),db.chatMessage.count({where:{conversationId:id}})]);const peer=await db.chatRead.aggregate({where:{conversationId:id,userId:actor.permissions.includes("chat.manage")?actor.conversation.userId:{not:actor.user.id}},_max:{lastReadId:true}});return {items:items.reverse(),total,page,readThrough:peer._max.lastReadId||0};}
+ @Post("conversations/:id/messages") async send(@Req() req:Request,@Param("id") id:string,@Body() body:unknown){const actor=await access(req,id);const input=validate(z.object({body:z.string().trim().min(1).max(4000),requestKey:z.string().uuid()}).strict(),body);await throttle(actor.user.id,"chat_send",30);
+  const same=async()=>{const prior=await db.chatMessage.findUnique({where:{senderId_requestKey:{senderId:actor.user.id,requestKey:input.requestKey}}});if(prior&&(prior.conversationId!==id||prior.body!==input.body))throw new ConflictException("Message retry does not match the original.");return prior;};const prior=await same();if(prior)return prior;
+  try{return await db.$transaction(async tx=>{const message=await tx.chatMessage.create({data:{conversationId:id,senderId:actor.user.id,senderName:actor.user.name,fromStaff:actor.permissions.includes("chat.manage"),...input}});await tx.chatConversation.update({where:{id},data:{updatedAt:new Date()}});return message;});}catch(error){if((error as {code?:string}).code==="P2002"){const existing=await same();if(existing)return existing;}throw error;}
+ }
+ @Post("conversations/:id/read") async read(@Req() req:Request,@Param("id") id:string,@Body() body:unknown){const {user}=await access(req,id);const input=validate(z.object({lastReadId:z.number().int().positive()}).strict(),body);if(!await db.chatMessage.findFirst({where:{id:input.lastReadId,conversationId:id}}))throw new BadRequestException("Message does not belong to this conversation.");await db.chatRead.upsert({where:{conversationId_userId:{conversationId:id,userId:user.id}},create:{conversationId:id,userId:user.id},update:{}});await db.chatRead.updateMany({where:{conversationId:id,userId:user.id,lastReadId:{lt:input.lastReadId}},data:{lastReadId:input.lastReadId}});return {success:true};}
+}

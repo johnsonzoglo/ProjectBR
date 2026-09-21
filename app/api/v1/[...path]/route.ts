@@ -13,7 +13,7 @@ async function proxy(request: Request) {
     const response = await fetch(new URL(url.pathname + url.search, origin), {
       method: request.method, headers, redirect: "manual",
       body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer(),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(url.pathname.startsWith("/api/v1/auth/") ? 45000 : 15000),
     });
     const result = new Headers(response.headers);
     result.set("cache-control", "no-store");
@@ -23,4 +23,4 @@ async function proxy(request: Request) {
     return Response.json({ message: "Account services are temporarily unavailable. Please try again shortly." }, { status: 503 });
   }
 }
-export { proxy as GET, proxy as POST, proxy as PATCH, proxy as DELETE };
+export { proxy as GET, proxy as POST, proxy as PATCH, proxy as PUT, proxy as DELETE };

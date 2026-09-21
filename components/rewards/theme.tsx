@@ -25,9 +25,9 @@ export function useRewardTheme() {
   }
   return { theme, toggleTheme };
 }
-export function ThemeSurface({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function ThemeSurface({ children, className = "", themeOverride }: { children: ReactNode; className?: string; themeOverride?: Theme }) {
   const { theme } = useRewardTheme();
-  return <div className={`reward-app ${className}`} data-theme={theme}>{children}</div>;
+  return <div className={`reward-app ${className}`} data-theme={themeOverride || theme}>{children}</div>;
 }
 export function ThemeToggle() {
   const { theme, toggleTheme } = useRewardTheme();

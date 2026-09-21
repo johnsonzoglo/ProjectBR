@@ -1,0 +1,6 @@
+CREATE TABLE "chat_conversations" ("id" TEXT PRIMARY KEY, "userId" TEXT NOT NULL UNIQUE REFERENCES "users"("id"), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE "chat_messages" ("id" SERIAL PRIMARY KEY, "conversationId" TEXT NOT NULL REFERENCES "chat_conversations"("id") ON DELETE CASCADE, "senderId" TEXT NOT NULL REFERENCES "users"("id"), "senderName" TEXT NOT NULL, "fromStaff" BOOLEAN NOT NULL, "body" TEXT NOT NULL CHECK(length("body") BETWEEN 1 AND 4000), "requestKey" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE("senderId","requestKey"));
+CREATE INDEX "chat_messages_conversationId_id_idx" ON "chat_messages"("conversationId","id");
+CREATE TABLE "chat_reads" ("conversationId" TEXT NOT NULL REFERENCES "chat_conversations"("id") ON DELETE CASCADE, "userId" TEXT NOT NULL REFERENCES "users"("id"), "lastReadId" INTEGER NOT NULL DEFAULT 0, PRIMARY KEY("conversationId","userId"));
+INSERT INTO "permissions" ("id","key") VALUES (gen_random_uuid()::text,'chat.manage') ON CONFLICT ("key") DO NOTHING;
+INSERT INTO "role_permissions" ("roleId","permissionId") SELECT r.id,p.id FROM roles r CROSS JOIN permissions p WHERE r.key IN ('admin','super_admin') AND p.key='chat.manage' ON CONFLICT DO NOTHING;

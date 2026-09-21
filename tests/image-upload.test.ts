@@ -1,0 +1,20 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { designImageData } from "../lib/image-upload";
+test("design uploads decode, resize large images and surface invalid inputs", async t => {
+ let closed = 0; let drawn = 0; let rejectDecode = false;
+ const originalBitmap = Object.getOwnPropertyDescriptor(globalThis, 'createImageBitmap');
+ const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+ const originalReader = Object.getOwnPropertyDescriptor(globalThis, 'FileReader');
+ const restore = (key: string, descriptor?: PropertyDescriptor) => { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key); };
+ t.after(() => { restore('createImageBitmap', originalBitmap); restore('document', originalDocument); restore('FileReader', originalReader); });
+ Object.defineProperty(globalThis, 'createImageBitmap', { configurable: true, value: async () => { if (rejectDecode) throw new Error('Invalid image'); return { width: 4000, height: 3000, close: () => closed++ }; } });
+ Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => ({ width: 0, height: 0, getContext: () => ({ drawImage: () => drawn++ }), toBlob: (callback: (blob: Blob) => void) => callback(new Blob(['resized-image'], { type: 'image/webp' })) }) } });
+ Object.defineProperty(globalThis, 'FileReader', { configurable: true, value: class { result = ''; onload?: () => void; onerror?: () => void; readAsDataURL(blob: Blob) { void blob.arrayBuffer().then(buffer => { this.result = 'data:' + blob.type + ';base64,' + Buffer.from(buffer).toString('base64'); this.onload?.(); }); } } });
+ const large = new File([new Uint8Array(3 * 1024 * 1024)], 'large.png', { type: 'image/png' });
+ assert.match(await designImageData(large), /^data:image\/webp;base64,/); assert.equal(drawn, 1); assert.equal(closed, 1);
+ assert.match(await designImageData(new File(['small'], 'small.png', { type: 'image/png' })), /^data:image\/png;base64,/); assert.equal(closed, 2);
+ await assert.rejects(designImageData(new File(['text'], 'text.txt', { type: 'text/plain' })), /JPG/);
+ await assert.rejects(designImageData(new File([new Uint8Array(16 * 1024 * 1024)], 'huge.png', { type: 'image/png' })), /15 MB/);
+ rejectDecode = true; await assert.rejects(designImageData(new File(['broken'], 'broken.png', { type: 'image/png' })), /could not be opened/);
+});
