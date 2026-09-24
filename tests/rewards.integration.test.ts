@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readdir, readFile, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import pg from "pg";
+import { enrollStaff } from "./staff-mfa.js";
 
 const databaseName = `reward_test_${randomUUID().replaceAll("-", "")}`;
 const originalUrl = new URL(process.env.DATABASE_URL!);
@@ -73,6 +74,7 @@ before(async () => {
   const { createApp } = await import("../apps/api/src/app.js"); app = await createApp(); await app.listen(0, "127.0.0.1"); base = await app.getUrl();
   user = await account("rewards-user@example.test"); staff = await account("rewards-admin@example.test");
   const role = await db.role.findUniqueOrThrow({ where: { key: "admin" } }); await db.userRole.create({ data: { userId: staff.id, roleId: role.id } });
+  staff.cookie = (await enrollStaff(request, staff.email, password, staff.cookie)).cookie;
 });
 beforeEach(async () => { await db.rateLimit.deleteMany(); });
 after(async () => {
@@ -90,6 +92,10 @@ test("reward routes require authentication and admin permission", async () => {
   assert.equal((await request("/admin/rewards")).status, 403);
   assert.equal((await request("/admin/rewards/tasks", "POST", taskBody())).status, 403);
   assert.equal((await request("/admin/rewards/settings", "PATCH", {})).status, 403);
+  assert.equal((await request("/admin/rewards/settings")).status, 403);
+  const settingsOnly = await json<{ pointsPerUsd: number; tasks?: unknown }>(await request("/admin/rewards/settings", "GET", undefined, staff.cookie));
+  assert.ok(settingsOnly.pointsPerUsd > 0);
+  assert.equal(settingsOnly.tasks, undefined);
 });
 test("tasks start once, reject unverified claims, and do not expose codes", async () => {
   codeTask = (await task()).id;
@@ -455,7 +461,10 @@ test("task access, image proof, notifications and admin removal", async () => {
   await json(await request('/tasks/' + publicTask.id + '/claim', 'POST', {}), 201);
   const payout = await json<{id:string}>(await request('/wallet/withdrawals','POST',{provider:'crypto',asset:'USDT',network:'TRON (TRC20)',address:'T' + 'A'.repeat(33),amountCents:100,requestKey:randomUUID()}),201);
   await json(await request('/admin/rewards/withdrawals/' + payout.id,'POST',{decision:'approve',reason:'Verified reward payout eligibility'},staff.cookie),201);
-  await json(await request('/admin/rewards/withdrawals/' + payout.id,'POST',{decision:'paid',reason:'Payment confirmed without transaction ID'},staff.cookie),201);
+  await json(await request('/admin/rewards/withdrawals/' + payout.id,'POST',{decision:'paid',reason:'Payment confirmed without transaction ID',payoutProofImage:receiptImage},staff.cookie),201);
+  const payoutEvidence = await json<{ item: { payoutProofImage: string | null }; matched: boolean }>(await request('/admin/reconciliation/withdrawals/' + payout.id, 'GET', undefined, staff.cookie));
+  assert.equal(payoutEvidence.item.payoutProofImage, receiptImage);
+  assert.equal(payoutEvidence.matched, true);
   assert.equal((await request('/admin/rewards/tasks/' + publicTask.id, 'DELETE', {})).status,403);
   await json(await request('/admin/rewards/tasks/' + publicTask.id, 'DELETE', {}, staff.cookie));
   assert.equal((await request('/tasks/' + publicTask.id)).status,404);
@@ -973,4 +982,54 @@ test("shared task screenshots are flagged for admin review without exposing the 
   assert.ok(flags.length > 0);
   const alerts = await json<{ items: Array<{ key: string }> }>(await request("/notifications", "GET", undefined, staff.cookie));
   assert.ok(alerts.items.some(item => item.key.startsWith("task-risk:")));
+});
+
+test("reconciliation matches payment ledger entries and flags missing credits", async () => {
+  assert.equal((await request("/admin/reconciliation")).status, 403);
+  const valid = await db.deposit.create({ data: { userId: user.id, requestKey: randomUUID(), amountCents: 1500, provider: "mobile_money", methodLabel: "Mobile Money", recipient: "Test recipient", instructions: "Test instructions", paymentReference: `TEST-${randomUUID()}`, status: "completed" } });
+  const missing = await db.deposit.create({ data: { userId: user.id, requestKey: randomUUID(), amountCents: 1800, provider: "mobile_money", methodLabel: "Mobile Money", recipient: "Test recipient", instructions: "Test instructions", paymentReference: `TEST-${randomUUID()}`, status: "completed" } });
+  await db.ledgerEntry.create({ data: { userId: user.id, kind: "deposit_credit", points: 0, depositCents: 1500, reference: `deposit:${valid.id}`, description: "Test deposit credit" } });
+  const list = await json<{ items: Array<{ id: string; matched: boolean; issues: string[] }> }>(await request("/admin/reconciliation?kind=deposits", "GET", undefined, staff.cookie));
+  assert.equal(list.items.find(item => item.id === valid.id)?.matched, true);
+  assert.equal(list.items.find(item => item.id === missing.id)?.matched, false);
+  const detail = await json<{ ledger: Array<{ reference: string }>; audit: unknown[] }>(await request(`/admin/reconciliation/deposits/${valid.id}`, "GET", undefined, staff.cookie));
+  assert.equal(detail.ledger[0].reference, `deposit:${valid.id}`);
+  assert.equal((await request(`/admin/reconciliation/deposits/${valid.id}`)).status, 403);
+});
+
+test("super admin creates limited roles and assignment revokes old sessions", async () => {
+  assert.equal((await request("/admin/staff", "GET", undefined, staff.cookie)).status, 403);
+  const owner = await account(`staff-owner-${randomUUID()}@example.test`);
+  const candidate = await account(`staff-candidate-${randomUUID()}@example.test`);
+  const superRole = await db.role.findUniqueOrThrow({ where: { key: "super_admin" } });
+  await db.userRole.create({ data: { userId: owner.id, roleId: superRole.id } });
+  assert.equal((await request("/admin/staff", "GET", undefined, owner.cookie)).status, 403, "Staff cannot use admin controls before MFA enrollment");
+  owner.cookie = (await enrollStaff(request, owner.email, password, owner.cookie)).cookie;
+  const created = await json<{ key: string; id: string }>(await request("/admin/staff/roles", "POST", { name: "Support reviewer", permissions: ["chat.manage", "users.read"], reason: "Limit support staff to customer records" }, owner.cookie), 201);
+  assert.match(created.key, /^staff_/);
+  assert.equal((await request("/admin/staff/roles", "POST", { name: "Unsafe", permissions: ["roles.manage"], reason: "Attempt to grant owner access" }, owner.cookie)).status, 400);
+  assert.equal((await request(`/admin/staff/users/${owner.id}`, "PATCH", { roleKey: "user", reason: "Attempt to remove own access" }, owner.cookie)).status, 400);
+  await json(await request(`/admin/staff/users/${candidate.id}`, "PATCH", { roleKey: created.key, reason: "Assign customer support account" }, owner.cookie));
+  assert.equal((await request("/admin/users", "GET", undefined, candidate.cookie)).status, 401);
+  const candidateLogin = await request("/auth/sign-in/email", "POST", { email: candidate.email, password }, "");
+  const candidateInitial = candidateLogin.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");
+  await db.rateLimit.deleteMany();
+  const newCookie = (await enrollStaff(request, candidate.email, password, candidateInitial)).cookie;
+  assert.equal((await request("/admin/users", "GET", undefined, newCookie)).status, 200);
+  assert.equal((await request("/admin/staff", "GET", undefined, newCookie)).status, 403);
+  assert.equal((await request("/admin/rewards/settings", "PATCH", {}, newCookie)).status, 403);
+  const role = await db.role.findUniqueOrThrow({ where: { id: created.id }, include: { permissions: { include: { permission: true } } } });
+  assert.equal(role.permissions.some(entry => entry.permission.key === "roles.manage"), false);
+});
+
+test("staff step-up and idle expiration are enforced by the server", async () => {
+  const session = await db.session.findFirstOrThrow({ where: { userId: staff.id }, orderBy: { createdAt: "desc" } });
+  await db.session.update({ where: { id: session.id }, data: { staffReauthenticatedAt: new Date(Date.now() - 11 * 60 * 1000), lastActivityAt: new Date() } });
+  const sensitive = "/admin/payments/methods/crypto_usdt";
+  assert.equal((await request(sensitive, "PATCH", {}, staff.cookie)).status, 403);
+  assert.equal((await request("/admin/security/confirm", "POST", { password: "wrong password" }, staff.cookie)).status, 401);
+  assert.equal((await request("/admin/security/confirm", "POST", { password }, staff.cookie)).status, 201);
+  assert.equal((await request(sensitive, "PATCH", {}, staff.cookie)).status, 400, "Recent authentication allows request validation to proceed");
+  await db.session.update({ where: { id: session.id }, data: { lastActivityAt: new Date(Date.now() - 31 * 60 * 1000) } });
+  assert.equal((await request("/admin/rewards/settings", "GET", undefined, staff.cookie)).status, 401);
 });

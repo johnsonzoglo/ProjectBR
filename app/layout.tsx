@@ -11,8 +11,10 @@ import "./landing.css";
 import "./responsive-updates.css";
 import "./user-neon.css";
 import "./promotion-mobile.css";
+import "./admin/operations.css";
 import "./phone-tasks.css";
 import "./user-portal-polish.css";
+import "./admin/redesign.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

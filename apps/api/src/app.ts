@@ -2,6 +2,9 @@ import "reflect-metadata";
 import { PromotionsController } from "./modules/rewards/promotions.controller.js";
 import { ChatController } from "./modules/chat/chat.controller.js";
 import { NotificationsController } from "./modules/notifications/notifications.controller.js";
+import { StaffController } from "./modules/users/staff.controller.js";
+import { StaffSecurityController } from "./modules/permissions/staff-security.controller.js";
+import { ReconciliationController } from "./modules/rewards/reconciliation.controller.js";
 import { Controller, Get, Module } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import express from "express";
@@ -22,7 +25,7 @@ class HealthController {
   async health() { await db.$queryRaw`SELECT 1`; return { status: "ok", module: "identity" }; }
 }
 
-@Module({ controllers: [PromotionsController, ChatController, NotificationsController, HealthController, UsersController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
+@Module({ controllers: [PromotionsController, ChatController, NotificationsController, StaffController, StaffSecurityController, ReconciliationController, HealthController, UsersController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
 class AppModule {}
 
 export async function createApp() {
@@ -38,7 +41,7 @@ export async function createApp() {
     }
     next();
   });
-  const authPaths = new Set(["/email-otp/verify-email", "/sign-up/email", "/sign-in/email", "/sign-out", "/verify-email", "/send-verification-email", "/request-password-reset", "/reset-password", "/change-password", "/get-session"]);
+  const authPaths = new Set(["/email-otp/verify-email", "/sign-up/email", "/sign-in/email", "/sign-out", "/verify-email", "/send-verification-email", "/request-password-reset", "/reset-password", "/change-password", "/get-session", "/two-factor/enable", "/two-factor/verify-totp", "/two-factor/verify-backup-code", "/two-factor/generate-backup-codes"]);
   app.use("/api/v1/auth", (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (!authPaths.has(req.path) && !/^\/reset-password\/[A-Za-z0-9_-]+$/.test(req.path)) {
       res.status(404).json({ message: "Endpoint not found." }); return;

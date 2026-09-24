@@ -8,8 +8,8 @@ import { publicProfile, requireUser } from "../permissions/access.js";
 export class UsersController {
   @Get()
   async profile(@Req() req: Request) {
-    const { user, permissions } = await requireUser(req);
-    return { user: publicProfile(user), permissions, roles: user.roles.map(({ role }) => role.name) };
+    const { user, permissions } = await requireUser(req, undefined, { allowStaffEnrollment: true });
+    return { user: publicProfile(user), permissions, roles: user.roles.map(({ role }) => role.key), staffSecurity: user.roles.some(({ role }) => role.key !== "user") ? { twoFactorEnabled: user.twoFactorEnabled, twoFactorEnabledAt: user.twoFactorEnabledAt } : null };
   }
 
   @Patch()

@@ -4,7 +4,7 @@ import type { Request } from "express";
 import { z } from "zod";
 import type { Prisma } from "../../../../../packages/database/generated/client.js";
 import { db } from "../../database.js";
-import { requireUser } from "../permissions/access.js";
+import { requireRecentStaffAuth, requireUser } from "../permissions/access.js";
 import { activeUser, postDepositLedger, rewardTransaction, throttle } from "./service.js";
 import { validate } from "./rewards.controller.js";
 import { cryptoAssets, quoteCrypto, validateCryptoMethod, validateCryptoTransaction } from "./crypto.js";
@@ -148,13 +148,14 @@ export class PaymentsController {
     const filter = validate(z.enum(["all", "pending", "approved", "paid", "rejected", "cancelled"]), status);
     const term = search.trim().slice(0, 100);
     const where: Prisma.WithdrawalWhereInput = { ...(filter === "all" ? {} : { status: filter }), ...(term ? { OR: [{ id: { contains: term, mode: "insensitive" } }, { paymentReference: { contains: term, mode: "insensitive" } }, { user: { is: { OR: [{ name: { contains: term, mode: "insensitive" } }, { email: { contains: term, mode: "insensitive" } }] } } }] } : {}) };
-    const [items, total] = await db.$transaction([db.withdrawal.findMany({ where, include: { user: { select: { id: true, name: true, email: true, withdrawalEligible: true, status: true, emailVerified: true } } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: (page - 1) * 20, take: 20 }), db.withdrawal.count({ where })]);
+    const [items, total] = await db.$transaction([db.withdrawal.findMany({ where, omit: { payoutProofImage: true }, include: { user: { select: { id: true, name: true, email: true, withdrawalEligible: true, status: true, emailVerified: true } } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: (page - 1) * 20, take: 20 }), db.withdrawal.count({ where })]);
     return { items, total, page, pageSize: 20 };
   }
 
   @Patch("admin/payments/methods/:provider")
   async method(@Req() req: Request, @Param("provider") provider: string, @Body() body: unknown) {
-    const { user } = await requireUser(req, "rewards.manage");
+    const { user, sessionId } = await requireUser(req, "rewards.manage");
+    await requireRecentStaffAuth(sessionId);
     const key = validate(z.enum(["crypto_usdt", "crypto_btc", "crypto_eth", "mobile_money"]), provider);
     const { reason, ...data } = validate(z.object({ network: z.string().trim().max(80).default(""), usdRateCents: z.number().int().min(0).max(2147483647).default(0), label: z.string().trim().min(3).max(80), enabled: z.boolean(), recipient: z.string().trim().max(1000), instructions: z.string().trim().max(4000), minimumCents: z.number().int().min(1).max(1000000), maximumCents: z.number().int().min(1).max(1000000), reason: reasonSchema }).strict().refine(v => v.maximumCents >= v.minimumCents, "Maximum must be at least the minimum").refine(v => !v.enabled || (v.recipient.length >= 5 && v.instructions.length >= 10), "Configure receiving details and instructions before enabling deposits"), body);
     return rewardTransaction(async tx => {

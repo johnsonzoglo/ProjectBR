@@ -4,7 +4,7 @@ import type { Request } from "express";
 import { randomBytes, createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { db } from "../../database.js";
-import { requireUser } from "../permissions/access.js";
+import { requireRecentStaffAuth, requireUser } from "../permissions/access.js";
 import { requireWithdrawalReferrals, creditApprovedRun, codeHash, postLedger, postDepositLedger, rewardTransaction, settings, throttle } from "./service.js";
 import { validate } from "./rewards.controller.js";
 import { parseCryptoDestination, validateCryptoTransaction } from "./crypto.js";
@@ -77,11 +77,17 @@ export class AdminRewardsController {
       db.rewardSettings.upsert({ where: { id: "default" }, create: { id: "default" }, update: {} }),
       db.task.findMany({ where: { removedAt: null }, orderBy: { createdAt: "desc" }, take: 200, include: { products: { orderBy: { position: "asc" } }, _count: { select: { runs: true } }, membershipPlan: { select: { id: true, name: true, key: true } } } }),
       db.taskRun.findMany({ where: { status: "pending_review", user: { status: { not: "deleted" } } }, include: { productAnswers: { include: { product: { select: { name: true, imageUrl: true } } } }, task: { select: { title: true, taskType: true, surveyQuestions: true } }, user: { select: { name: true, email: true } } }, orderBy: { submittedAt: "asc" }, take: 20, skip: (page - 1) * 20 }),
-      db.withdrawal.findMany({ where: { status: { in: ["pending", "approved"] } }, include: { user: { select: { name: true, email: true, withdrawalEligible: true } } }, orderBy: { createdAt: "asc" }, take: 20, skip: (page - 1) * 20 }),
+      db.withdrawal.findMany({ where: { status: { in: ["pending", "approved"] } }, omit: { payoutProofImage: true }, include: { user: { select: { name: true, email: true, withdrawalEligible: true } } }, orderBy: { createdAt: "asc" }, take: 20, skip: (page - 1) * 20 }),
       db.taskRun.count({ where: { status: "pending_review" } }), db.withdrawal.count({ where: { status: { in: ["pending", "approved"] } } }),
       db.membershipPlan.findMany({ where: { active: true }, orderBy: { priceCents: "asc" }, select: { id: true, name: true, key: true } }),
     ]);
     return { rules, tasks, reviews: reviews.map(displayTaskProof), withdrawals, reviewCount, withdrawalCount, membershipPlans, page };
+  }
+
+  @Get("settings")
+  async currentRules(@Req() req: Request) {
+    await requireUser(req, "rewards.manage");
+    return settings();
   }
 
   @Patch("settings")
@@ -226,8 +232,9 @@ export class AdminRewardsController {
 
   @Post("withdrawals/:id")
   async withdrawal(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
-    const { user } = await requireUser(req, "rewards.manage");
-    const data = validate(z.object({ decision: z.enum(["approve", "reject", "paid"]), reason: reasonSchema, paymentReference: z.string().trim().min(5).max(150).optional() }).strict(), body);
+    const { user, sessionId } = await requireUser(req, "rewards.manage");
+    await requireRecentStaffAuth(sessionId);
+    const data = validate(z.object({ decision: z.enum(["approve", "reject", "paid"]), reason: reasonSchema, paymentReference: z.string().trim().min(5).max(150).optional(), payoutProofImage: z.string().max(2800000).regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/).optional() }).strict(), body);
     return rewardTransaction(async tx => {
       const withdrawal = await tx.withdrawal.findUnique({ where: { id }, include: { user: true } });
       if (!withdrawal) throw new BadRequestException("Withdrawal not found.");
@@ -237,6 +244,7 @@ export class AdminRewardsController {
       if (data.decision === "approve" && withdrawal.source === "points") await requireWithdrawalReferrals(tx, withdrawal.userId);
       if (data.decision === "approve" && withdrawal.status !== "pending") throw new BadRequestException("This withdrawal has already been approved.");
       if (data.decision === "paid" && (withdrawal.status !== "approved")) throw new BadRequestException("Approve the request before recording payment.");
+      if (data.decision !== "paid" && data.payoutProofImage) throw new BadRequestException("Attach payout proof only when recording payment.");
       if (data.decision === "paid" && withdrawal.provider === "crypto" && data.paymentReference) {
         const { network } = parseCryptoDestination(withdrawal.destination);
         data.paymentReference = validateCryptoTransaction(network, data.paymentReference);
@@ -252,8 +260,8 @@ export class AdminRewardsController {
         if (data.decision === "reject") await postDepositLedger(tx, withdrawal.userId, "withdrawal_release", 0, -withdrawal.amountCents, `release:${id}`, "Withdrawal rejected; deposit funds released");
         if (data.decision === "paid") await postDepositLedger(tx, withdrawal.userId, "withdrawal_paid", -withdrawal.amountCents, -withdrawal.amountCents, `paid:${id}`, "Deposit withdrawal payment recorded");
       }
-      const updated = await tx.withdrawal.update({ where: { id }, data: { status: data.decision === "approve" ? "approved" : data.decision === "reject" ? "rejected" : "paid", reason: data.reason, paymentReference: data.paymentReference } });
-      await tx.auditLog.create({ data: { actorId: user.id, targetId: id, action: `withdrawal.${updated.status}`, reason: data.reason, detail: { paymentReference: data.paymentReference || null } } });
+      const updated = await tx.withdrawal.update({ where: { id }, data: { status: data.decision === "approve" ? "approved" : data.decision === "reject" ? "rejected" : "paid", reason: data.reason, paymentReference: data.paymentReference, ...(data.decision === "paid" ? { payoutProofImage: data.payoutProofImage } : {}) } });
+      await tx.auditLog.create({ data: { actorId: user.id, targetId: id, action: `withdrawal.${updated.status}`, reason: data.reason, detail: { paymentReference: data.paymentReference || null, payoutProofAttached: Boolean(data.payoutProofImage) } } });
       return updated;
     });
   }

@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readdir, readFile, mkdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import pg from "pg";
+import { enrollStaff } from "./staff-mfa.js";
 
 const databaseName = `reward_test_${randomUUID().replaceAll("-", "")}`;
 const originalUrl = new URL(process.env.DATABASE_URL!);
@@ -148,7 +149,8 @@ test("admin suspension revokes sessions and records a reason; self-suspension is
   const staff = await db.user.update({ where: { email: staffEmail }, data: { emailVerified: true } });
   const role = await db.role.findUniqueOrThrow({ where: { key: "admin" } });
   await db.userRole.create({ data: { userId: staff.id, roleId: role.id } });
-  const staffCookie = await signIn(staffEmail);
+  const initialStaffCookie = await signIn(staffEmail);
+  const staffCookie = (await enrollStaff(request, staffEmail, password, initialStaffCookie)).cookie;
   assert.equal((await request("/admin/users", "GET", undefined, staffCookie)).status, 200);
   assert.equal((await request(`/admin/users/${staff.id}/status`, "POST", { status: "suspended", reason: "Cannot suspend myself" }, staffCookie)).status, 400);
   assert.equal((await request(`/admin/users/${userId}/status`, "POST", { status: "suspended", reason: "Security review of this account" }, staffCookie)).status, 201);

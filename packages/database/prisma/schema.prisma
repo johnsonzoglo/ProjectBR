@@ -14,6 +14,8 @@ model User {
   name          String
   email         String    @unique
   emailVerified Boolean   @default(false)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorEnabledAt DateTime?
   image         String?
   status        String    @default("active")
   deletedAt     DateTime?
@@ -24,6 +26,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
+  twoFactors    TwoFactor[]
   accounts      Account[]
   roles         UserRole[]
   wallet        Wallet?
@@ -43,6 +46,8 @@ model Session {
   token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  lastActivityAt DateTime?
+  staffReauthenticatedAt DateTime?
   ipAddress String?
   userAgent String?
   userId    String
@@ -50,6 +55,20 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+model TwoFactor {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret String
+  backupCodes String
+  verified Boolean @default(true)
+  failedVerificationCount Int @default(0)
+  lockedUntil DateTime?
+  @@index([userId])
+  @@index([secret])
+  @@map("two_factors")
 }
 
 model Account {
@@ -335,6 +354,7 @@ model Withdrawal {
   status String @default("pending")
   reason String?
   paymentReference String?
+  payoutProofImage String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user User @relation(fields: [userId], references: [id])

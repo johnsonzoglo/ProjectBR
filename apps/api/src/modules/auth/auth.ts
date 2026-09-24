@@ -1,4 +1,4 @@
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, twoFactor } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError } from "better-auth/api";
@@ -9,7 +9,7 @@ import { markReferralVerified, qualifyReferral, rewardTransaction } from "../rew
 
 export const auth = betterAuth({
   appName: "Rewardly",
-  plugins: [emailOTP({ otpLength: 6, expiresIn: 600, allowedAttempts: 5, storeOTP: "hashed", overrideDefaultEmailVerification: true, disableSignUp: true,
+  plugins: [twoFactor({ issuer: "Rewardly", trustedDevices: { enabled: false } }), emailOTP({ otpLength: 6, expiresIn: 600, allowedAttempts: 5, storeOTP: "hashed", overrideDefaultEmailVerification: true, disableSignUp: true,
     sendVerificationOTP: async ({ email, otp, type }) => {
       if (type !== "email-verification") throw new Error("Unsupported verification purpose");
       await sendAccountEmail(email, "Verify your Rewardly email", "", otp);

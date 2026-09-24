@@ -8,7 +8,7 @@ type Message={id:number;senderId:string;senderName:string;fromStaff:boolean;body
 export function SupportChat({admin=false,userId}:{admin?:boolean;userId:string}){
  const [page,setPage]=useState(1);const [search,setSearch]=useState("");const [query,setQuery]=useState("");const [selected,setSelected]=useState("");const [error,setError]=useState("");const [busy,setBusy]=useState(false);
  const list=useResource<{items:Conversation[];total:number}>("/chat/conversations?page="+page+"&search="+encodeURIComponent(query),5000);
- useEffect(()=>{const id=new URLSearchParams(window.location.search).get("conversation");if(id)setSelected(id);},[]);
+ useEffect(()=>{const id=new URLSearchParams(window.location.search).get("conversation");if(!id)return;const timer=window.setTimeout(()=>setSelected(id),0);return ()=>window.clearTimeout(timer);},[]);
  const activeId=selected||list.data?.items[0]?.id; const active=list.data?.items.find(c=>c.id===activeId);
  async function start(email?:string){if(busy)return;setBusy(true);setError("");try{const row=await api<{id:string}>("/chat/conversations",{method:"POST",body:JSON.stringify(email?{email}:{})});setSelected(row.id);await list.refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  return <><div className="ad-page-title"><div><span className="eyebrow">PRIVATE CONVERSATIONS</span><h1>{admin?"Support inbox":"Chat with support"}</h1><p>{admin?"Help users with their tasks, accounts and payments.":"Send a message to the admin team. Replies appear here and in your notifications."}</p></div></div>{error&&<p className="form-error" role="alert">{error}</p>}<div className={"support-workspace "+(!admin?"support-user":"")}>

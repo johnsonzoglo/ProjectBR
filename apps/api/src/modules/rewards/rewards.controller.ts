@@ -178,7 +178,7 @@ export class RewardsController {
   async withdrawals(@Req() req: Request, @Query("page") pageInput?: string) {
     const { user } = await requireUser(req); const page = pageValue(pageInput);
     const [items, total] = await db.$transaction([
-      db.withdrawal.findMany({ where: { userId: user.id }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: (page - 1) * 20, take: 20 }),
+      db.withdrawal.findMany({ where: { userId: user.id }, omit: { payoutProofImage: true }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: (page - 1) * 20, take: 20 }),
       db.withdrawal.count({ where: { userId: user.id } }),
     ]);
     return { items, total, page, pageSize: 20 };
