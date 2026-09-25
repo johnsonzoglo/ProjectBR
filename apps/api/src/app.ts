@@ -5,31 +5,43 @@ import { NotificationsController } from "./modules/notifications/notifications.c
 import { StaffController } from "./modules/users/staff.controller.js";
 import { StaffSecurityController } from "./modules/permissions/staff-security.controller.js";
 import { ReconciliationController } from "./modules/rewards/reconciliation.controller.js";
-import { Controller, Get, Module } from "@nestjs/common";
+import { Controller, Get, Headers, Module, NotFoundException, Res } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import express from "express";
 import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./modules/auth/auth.js";
 import { UsersController } from "./modules/users/users.controller.js";
+import { PortalController } from "./modules/users/portal.controller.js";
 import { AdminController } from "./modules/users/admin.controller.js";
 import { RewardsController } from "./modules/rewards/rewards.controller.js";
 import { AdminRewardsController } from "./modules/rewards/admin-rewards.controller.js";
 import { PaymentsController } from "./modules/rewards/payments.controller.js";
 import { env, trustedOrigins } from "./config.js";
 import { db } from "./database.js";
+import { metricsText, requestTelemetry } from "./observability.js";
+import type { Response } from "express";
 
 @Controller("api/v1")
 class HealthController {
   @Get("health")
-  async health() { await db.$queryRaw`SELECT 1`; return { status: "ok", module: "identity" }; }
+  health() { return { status: "ok", service: "rewardly-api", uptimeSeconds: Math.floor(process.uptime()) }; }
+  @Get("ready")
+  async ready() { await db.$queryRaw`SELECT 1`; const failedJobs = await db.backgroundJob.count({ where: { status: "failed" } }); return { status: "ready", database: "ok", failedJobs }; }
+  @Get("metrics")
+  async metrics(@Headers("authorization") authorization: string | undefined, @Res() response: Response) {
+    if (!env.HEALTH_TOKEN || authorization !== `Bearer ${env.HEALTH_TOKEN}`) throw new NotFoundException();
+    const [pending, failed] = await Promise.all([db.backgroundJob.count({ where: { status: "pending" } }), db.backgroundJob.count({ where: { status: "failed" } })]);
+    response.type("text/plain; version=0.0.4").send(metricsText({ pending, failed }));
+  }
 }
 
-@Module({ controllers: [PromotionsController, ChatController, NotificationsController, StaffController, StaffSecurityController, ReconciliationController, HealthController, UsersController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
+@Module({ controllers: [PromotionsController, ChatController, NotificationsController, StaffController, StaffSecurityController, ReconciliationController, HealthController, UsersController, PortalController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
 class AppModule {}
 
 export async function createApp() {
   const app = await NestFactory.create(AppModule, { bodyParser: false, logger: env.NODE_ENV === "test" ? false : ["error", "warn", "log"] });
+  app.use(requestTelemetry);
   app.use(helmet());
   app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     res.setHeader("Cache-Control", "no-store");

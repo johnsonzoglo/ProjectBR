@@ -1,0 +1,2 @@
+import { Shell } from "./shell";
+export function LegalPage({ eyebrow, title, updated = "September 24, 2026", children }: { eyebrow: string; title: string; updated?: string; children: React.ReactNode }) { return <Shell preview><div className="page-heading"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>Last updated {updated}</p></div></div><article className="panel legal-document">{children}</article></Shell>; }

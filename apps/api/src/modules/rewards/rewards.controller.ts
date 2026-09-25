@@ -24,7 +24,7 @@ export class RewardsController {
     const { user, permissions } = await requireUser(req);
     if (permissions.includes("users.read")) throw new ForbiddenException("Staff accounts manage tasks from the admin control center and cannot participate in them.");
     const now = new Date(); const day = new Date(now); day.setUTCHours(0, 0, 0, 0);
-    const [tasks, purchases] = await Promise.all([
+    const [tasks, purchases, favorites] = await Promise.all([
       db.task.findMany({
         where: { removedAt: null, OR: [{ active: true, startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gte: now } }] }, { runs: { some: { userId: user.id } } }] },
         omit: { coverImage: true, surveyQuestions: true },
@@ -35,6 +35,7 @@ export class RewardsController {
         orderBy: { createdAt: "desc" },
       }),
       db.membershipPurchase.findMany({ where: { userId: user.id, status: "active", OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }, select: { planId: true } }),
+      db.taskFavorite.findMany({ where: { userId: user.id }, select: { taskId: true } }),
     ]);
     const ownedPlans = purchases.map(purchase => purchase.planId);
     const grants = ownedPlans.length ? await db.membershipPlanAccess.findMany({ where: { grantorPlanId: { in: ownedPlans } }, select: { targetPlanId: true } }) : [];
@@ -47,12 +48,13 @@ export class RewardsController {
     ]) : [[], []];
     const today = new Map(dailyCounts.map(count => [count.taskId, count._count]));
     const usedByRound = new Map(roundCounts.map(count => [`${count.taskId}:${count.round}`, count._count]));
+    const favoriteIds = new Set(favorites.map(item => item.taskId));
     return visible.flatMap(({ runs, ...task }) => {
       const round = currentRounds.get(task.id)!;
       const run = runs.find(item => item.round === round) || runs.find(item => item.status !== "completed") || null;
       if (run?.status === "completed" && (!task.completedVisibleHours || (run.completedAt && now.getTime() - run.completedAt.getTime() > task.completedVisibleHours * 3600000))) return [];
       const nextAvailableAt = task.repeatHours ? new Date(task.startsAt.getTime() + (round + 1) * task.repeatHours * 3600000).toISOString() : null;
-      return [{ ...task, products: task.products, run, round, nextAvailableAt, coverImageUrl: task.coverVersion ? `/api/v1/tasks/${task.id}/cover?v=${task.coverVersion}` : null, slotsRemaining: Math.max(0, Math.min(task.totalLimit - (usedByRound.get(`${task.id}:${round}`) || 0), task.dailyLimit - (today.get(task.id) || 0))) }];
+      return [{ ...task, products: task.products, favorite: favoriteIds.has(task.id), run, round, nextAvailableAt, coverImageUrl: task.coverVersion ? `/api/v1/tasks/${task.id}/cover?v=${task.coverVersion}` : null, slotsRemaining: Math.max(0, Math.min(task.totalLimit - (usedByRound.get(`${task.id}:${round}`) || 0), task.dailyLimit - (today.get(task.id) || 0))) }];
     });
   }
 

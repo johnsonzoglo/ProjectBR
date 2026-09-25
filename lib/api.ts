@@ -1,4 +1,4 @@
-export type Profile = { user: { id: string; name: string; email: string; emailVerified: boolean; status: string; referralCode: string; createdAt: string }; permissions: string[]; roles: string[]; staffSecurity?: { twoFactorEnabled: boolean; twoFactorEnabledAt: string | null } | null };
+export type Profile = { user: { id: string; name: string; email: string; emailVerified: boolean; image?: string | null; phone?: string | null; notificationPreferences?: Record<string, boolean>; twoFactorEnabled?: boolean; status: string; referralCode: string; createdAt: string }; permissions: string[]; roles: string[]; security?: { twoFactorEnabled: boolean }; staffSecurity?: { twoFactorEnabled: boolean; twoFactorEnabledAt: string | null } | null };
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`/api/v1${path}`, { ...options, credentials: options?.credentials ?? "same-origin", headers: { "Content-Type": "application/json", ...options?.headers }, cache: "no-store" });
   const body = await response.json().catch(() => ({})) as { message?: string };

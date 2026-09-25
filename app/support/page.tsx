@@ -2,4 +2,5 @@
 import { AccountGate } from "../../components/account-gate";
 import { Shell } from "../../components/shell";
 import { SupportChat } from "../../components/support-chat";
-export default function Page(){return <AccountGate>{p=><Shell name={p.user.name}><SupportChat userId={p.user.id}/></Shell>}</AccountGate>;}
+import { SupportTickets } from "../../components/support-tickets";
+export default function Page(){return <AccountGate>{p=><Shell name={p.user.name}><SupportTickets/><SupportChat userId={p.user.id}/></Shell>}</AccountGate>;}

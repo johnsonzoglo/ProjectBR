@@ -18,6 +18,9 @@ const schema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
+  JOB_WORKER_ENABLED: z.string().default("true").transform(value => value === "true"),
+  JOB_POLL_MS: z.coerce.number().int().min(500).max(60000).default(2000),
+  HEALTH_TOKEN: z.string().min(24).optional(),
 });
 export const env = schema.parse(process.env);
 export const trustedOrigins = [...new Set([env.APP_ORIGIN, ...env.APP_TRUSTED_ORIGINS])];

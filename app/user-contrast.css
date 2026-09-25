@@ -1,0 +1,102 @@
+/* Final user-portal contrast layer. Keep this after all feature styles. */
+.reward-app.user-neon{
+  --rw-on-accent:#fff;
+  --rw-input-bg:#0c1730;
+  --rw-input-text:#f5f7ff;
+  --rw-input-placeholder:#8f9bb8;
+  --rw-subtle-bg:#111b34;
+  --rw-muted-border:#344363;
+  --rw-info-bg:#152544;
+  --rw-info-text:#c9d9ff;
+  --rw-danger-bg:#351c2a;
+  --rw-danger-text:#ffb8c5;
+  --rw-warning-bg:#332b1d;
+  --rw-warning-text:#f3d18b;
+  --rw-success-bg:#123229;
+  --rw-success-text:#93e7c2;
+}
+.reward-app.user-neon[data-theme="light"]{
+  --rw-on-accent:#fff;
+  --rw-input-bg:#e7ebf7;
+  --rw-input-text:#172342;
+  --rw-input-placeholder:#65748f;
+  --rw-subtle-bg:#e6ebf7;
+  --rw-muted-border:#b9c5df;
+  --rw-info-bg:#e4edff;
+  --rw-info-text:#214b89;
+  --rw-danger-bg:#fbe7ec;
+  --rw-danger-text:#a22742;
+  --rw-warning-bg:#fff0c8;
+  --rw-warning-text:#6e4a00;
+  --rw-success-bg:#ddf5e9;
+  --rw-success-text:#0f6548;
+}
+
+/* Typography and ordinary surfaces. */
+.user-neon .rw-page-main,.user-neon .panel,.user-neon .rw-card,.user-neon .rw-modal,.user-neon .rw-history-row,.user-neon .rw-withdrawal-row,.user-neon .rw-plan-card,.user-neon .rw-ticket-list article{color:var(--rw-text-primary)}
+.user-neon .rw-page-main p,.user-neon .panel p,.user-neon .rw-card p,.user-neon .rw-modal p,.user-neon .rw-history-row small,.user-neon .rw-withdrawal-row small,.user-neon .rw-plan-card>p,.user-neon .rw-ticket-list small{color:var(--rw-text-secondary)}
+.user-neon h1,.user-neon h2,.user-neon h3,.user-neon h4,.user-neon strong,.user-neon legend,.user-neon summary{color:inherit}
+.user-neon .eyebrow,.user-neon .rw-panel-kicker{color:var(--rw-primary)}
+.user-neon small,.user-neon .rw-helper,.user-neon label>small{color:var(--rw-text-secondary)}
+.user-neon a:not(.rw-button):not(.rw-page-signin){text-decoration-color:color-mix(in srgb,var(--rw-primary) 50%,transparent)}
+
+/* Forms remain readable regardless of older page-specific styles. */
+.user-neon input:not([type="checkbox"]):not([type="radio"]),.user-neon textarea,.user-neon select{
+  color:var(--rw-input-text)!important;background:var(--rw-input-bg)!important;border-color:var(--rw-muted-border)!important;
+}
+.user-neon input::placeholder,.user-neon textarea::placeholder{color:var(--rw-input-placeholder)!important;opacity:1}
+.user-neon label,.user-neon fieldset legend{color:var(--rw-text-primary)}
+.user-neon input:disabled,.user-neon textarea:disabled,.user-neon select:disabled{opacity:1;color:var(--rw-text-secondary)!important;background:var(--rw-subtle-bg)!important}
+.user-neon input:focus,.user-neon textarea:focus,.user-neon select:focus{border-color:var(--rw-primary)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--rw-primary) 18%,transparent)!important}
+
+/* Buttons and disabled controls. */
+.user-neon .rw-button-primary,.user-neon .button.dark{color:#fff!important;text-shadow:0 1px 1px #1d174d55}
+.user-neon .rw-button-secondary{color:var(--rw-primary);border-color:color-mix(in srgb,var(--rw-primary) 34%,var(--rw-border));background:color-mix(in srgb,var(--rw-primary) 10%,var(--rw-surface))}
+.user-neon button:disabled,.user-neon .rw-button:disabled{opacity:.78;filter:saturate(.75);cursor:not-allowed}
+.user-neon[data-theme="light"] button:disabled,.user-neon[data-theme="light"] .rw-button:disabled{opacity:.86;color:#4d5871}
+.user-neon[data-theme="light"] .rw-button-primary:disabled{color:#f8f9ff!important;background:linear-gradient(110deg,#796bce,#6c62bc)}
+
+/* Status, validation and informational components. */
+.user-neon .form-error,.user-neon .rw-error{color:var(--rw-danger-text);background:var(--rw-danger-bg);border:1px solid color-mix(in srgb,var(--rw-danger-text) 28%,transparent)}
+.user-neon .form-success{color:var(--rw-success-text);background:var(--rw-success-bg);border:1px solid color-mix(in srgb,var(--rw-success-text) 28%,transparent)}
+.user-neon .rw-notice,.user-neon .rw-preview-banner{color:var(--rw-info-text);background:var(--rw-info-bg);border-color:color-mix(in srgb,var(--rw-info-text) 25%,transparent)}
+.user-neon .rw-notice p,.user-neon .rw-preview-banner p{color:inherit}
+.user-neon .rw-plan-requirements{color:var(--rw-warning-text)!important;background:var(--rw-warning-bg)!important;border-color:color-mix(in srgb,var(--rw-warning-text) 34%,transparent)!important}
+.user-neon .status-badge,.user-neon .rw-state-badge{font-weight:700;border:1px solid currentColor}
+.user-neon[data-theme="light"] .status-badge,.user-neon[data-theme="light"] .rw-state-badge{color:#185c49;background:#dff4eb}
+.user-neon[data-theme="light"] .rw-state-badge.pending,.user-neon[data-theme="light"] .rw-state-badge.pending_review{color:#74520c;background:#fff0c6}
+.user-neon[data-theme="light"] .rw-state-badge.rejected,.user-neon[data-theme="light"] .rw-state-badge.failed{color:#9b2940;background:#fae4e9}
+
+/* Tables, lists, pagination and filters. */
+.user-neon table,.user-neon .rw-plan-table{color:var(--rw-text-primary)}
+.user-neon th,.user-neon .rw-plan-table>div:first-child{color:var(--rw-text-primary);background:var(--rw-surface-raised)}
+.user-neon td,.user-neon th,.user-neon .rw-plan-table>div{border-color:var(--rw-border-strong)}
+.user-neon td small,.user-neon .rw-plan-table span{color:var(--rw-text-secondary)}
+.user-neon .rw-pagination{color:var(--rw-text-secondary)}
+.user-neon .rw-task-filters button,.user-neon .task-board-tabs button,.user-neon .neon-categories button{color:var(--rw-text-secondary);border-color:var(--rw-muted-border)}
+.user-neon .rw-task-filters button.is-active,.user-neon .task-board-tabs button[aria-pressed="true"],.user-neon .neon-categories button.is-active{color:var(--rw-on-accent)}
+
+/* Feature pages that previously mixed fixed dark and light colors. */
+.user-neon[data-theme="light"] .rw-plan-heading h2,.user-neon[data-theme="light"] .rw-plan-card li,.user-neon[data-theme="light"] .rw-plan-price strong{color:#172342}
+.user-neon[data-theme="light"] .rw-plan-heading p,.user-neon[data-theme="light"] .rw-plan-price span,.user-neon[data-theme="light"] .rw-plan-description{color:#50617f!important}
+.user-neon[data-theme="light"] .rw-profile-referral h2,.user-neon[data-theme="light"] .rw-profile-referral strong{color:#172342}
+.user-neon[data-theme="light"] .rw-profile-referral p{color:#536582}
+.user-neon[data-theme="light"] .rw-profile-next h2,.user-neon[data-theme="light"] .rw-profile-next strong,.user-neon[data-theme="light"] .rw-profile-next .rw-tag{color:#fff}
+.user-neon[data-theme="light"] .rw-profile-next p{color:#e3eaff}
+.user-neon[data-theme="light"] .rw-balance-card h1,.user-neon[data-theme="light"] .rw-balance-card h2,.user-neon[data-theme="light"] .rw-balance-card strong,.user-neon[data-theme="light"] .rw-balance-card p{color:#fff}
+.user-neon[data-theme="light"] .neon-reward-banner h1,.user-neon[data-theme="light"] .neon-reward-banner h2,.user-neon[data-theme="light"] .neon-reward-banner strong{color:#fff}
+.user-neon[data-theme="light"] .neon-reward-banner p{color:#dce7ff}
+.user-neon[data-theme="light"] .rw-plan-card .rw-plan-fund,.user-neon[data-theme="light"] .rw-plan-card .rw-plan-fund strong{color:#fff}
+.user-neon[data-theme="light"] .neon-task-label,.user-neon[data-theme="light"] .neon-task-meta{color:#425675}
+.user-neon[data-theme="light"] .rw-repeat-info{color:#405474}
+.user-neon[data-theme="light"] .rw-account-tools .rw-danger-zone h2{color:#6f1f35}.user-neon[data-theme="light"] .rw-account-tools .rw-danger-zone p{color:#704956}
+
+/* Navigation and floating layers. */
+.user-neon[data-theme="light"] .rw-sidebar a,.user-neon[data-theme="light"] .rw-bottom-nav a{color:#465675}
+.user-neon[data-theme="light"] .rw-sidebar nav a.is-active,.user-neon[data-theme="light"] .rw-bottom-nav a.is-active{color:#3e32b7;font-weight:750}
+.user-neon[data-theme="light"] .notification-center,.user-neon[data-theme="light"] .support-chat-shell{color:#172342}
+.user-neon[data-theme="light"] .notification-center p,.user-neon[data-theme="light"] .support-chat-shell p{color:#52627d}
+
+@media(max-width:600px){
+  .user-neon .rw-button{font-weight:700}  .user-neon .rw-state-badge,.user-neon .status-badge{line-height:1.25}
+}

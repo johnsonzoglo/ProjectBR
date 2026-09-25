@@ -23,9 +23,8 @@
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
-    "drizzle-orm": "0.45.2",
     "lucide-react": "^0.577.0",
-    "next": "16.2.6",
+    "next": "16.3.6",
     "qrcode": "^1.5.4",
     "react": "19.2.6",
     "react-dom": "19.2.6"
@@ -40,9 +39,8 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
-    "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "^16.3.6",
     "prisma": "^7.0.0",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
@@ -52,5 +50,10 @@
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },
-  "type": "module"
+  "type": "module",
+  "overrides": {
+    "multer": "2.4.0",
+    "fast-uri": "4.2.1",
+    "baseline-browser-mapping": "2.11.25"
+  }
 }

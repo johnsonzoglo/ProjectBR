@@ -8,6 +8,7 @@ import { db } from "../../database.js";
 import { requireUser } from "../permissions/access.js";
 import { postDepositLedger, postLedger, rewardTransaction, throttle } from "../rewards/service.js";
 import { validate } from "../rewards/rewards.controller.js";
+import { sendUserUpdateEmail } from "../auth/mail.js";
 
 const pagination = (input = "1") => Math.max(1, Math.min(10000, Math.floor(Number(input) || 1)));
 const userSelect = { deletedAt: true, id: true, name: true, email: true, status: true, emailVerified: true, withdrawalEligible: true, withdrawalReason: true, referralCode: true, createdAt: true, wallet: true, roles: { select: { role: { select: { name: true, key: true } } } } } as const;
@@ -90,6 +91,18 @@ export class AdminController {
     const user = await db.user.findUnique({ where: { id }, select: { ...userSelect, _count: { select: { taskRuns: true, referralsSent: true, deposits: true, withdrawals: true } } } });
     if (!user) throw new BadRequestException("User not found.");
     return user;
+  }
+
+  @Post("users/:id/email")
+  async emailUser(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { user: actor } = await requireUser(req, "users.manage");
+    await throttle(actor.id, "admin_email_user", 20);
+    const input = validate(z.object({ subject: z.string().trim().min(3).max(150), message: z.string().trim().min(10).max(4000), actionPath: z.string().trim().regex(/^\/[A-Za-z0-9/_?=&.-]*$/).default("/dashboard") }).strict(), body);
+    const target = await db.user.findUnique({ where: { id }, include: { roles: { include: { role: true } } } });
+    if (!target || target.status === "deleted" || target.roles.some(role => role.role.key !== "user")) throw new BadRequestException("Select an active regular user.");
+    await sendUserUpdateEmail(target.email, input.subject, input.message, env.APP_ORIGIN + input.actionPath);
+    await db.auditLog.create({ data: { actorId: actor.id, targetId: target.id, action: "user.email_update_queued", detail: { subject: input.subject, actionPath: input.actionPath } } });
+    return { success: true, queued: true };
   }
 
   @Get("users/:id/activity")

@@ -7,6 +7,8 @@ import { db } from "../../database.js";
 import { requireRecentStaffAuth, requireUser } from "../permissions/access.js";
 import { activeUser, postDepositLedger, rewardTransaction, throttle } from "./service.js";
 import { validate } from "./rewards.controller.js";
+import { sendUserUpdateEmail } from "../auth/mail.js";
+import { env } from "../../config.js";
 import { cryptoAssets, quoteCrypto, validateCryptoMethod, validateCryptoTransaction } from "./crypto.js";
 
 const providerSchema = z.enum(["crypto", "mobile_money"]);
@@ -172,7 +174,7 @@ export class PaymentsController {
   async review(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
     const { user } = await requireUser(req, "rewards.manage");
     const data = validate(z.object({ decision: z.enum(["approve", "reject"]), reason: reasonSchema, confirmedAmountCents: z.number().int().min(1).max(1000000).optional() }).strict(), body);
-    return rewardTransaction(async tx => {
+    const result = await rewardTransaction(async tx => {
       const deposit = await tx.deposit.findUnique({ where: { id } });
       if (!deposit) throw new NotFoundException("Deposit not found.");
       if (deposit.userId === user.id) throw new BadRequestException("Another administrator must review your deposit.");
@@ -186,5 +188,8 @@ export class PaymentsController {
       await tx.auditLog.create({ data: { actorId: user.id, targetId: id, action: `deposit.${updated.status}`, reason: data.reason, detail: { amountCents: deposit.amountCents, provider: deposit.provider } } });
       return { deposit: updated, credited: data.decision === "approve" };
     });
+    const notice = await db.deposit.findUnique({ where: { id }, include: { user: { select: { email: true } } } });
+    if (notice) await sendUserUpdateEmail(notice.user.email, data.decision === "approve" ? "Your deposit was confirmed" : "Your deposit needs attention", data.decision === "approve" ? `Your $${(notice.amountCents / 100).toFixed(2)} deposit was confirmed and added to your deposit balance.` : "Your deposit proof was not approved. Open the payment page to review the decision and submit a corrected request if needed.", env.APP_ORIGIN + "/payments", "View payments").catch(() => undefined);
+    return result;
   }
 }

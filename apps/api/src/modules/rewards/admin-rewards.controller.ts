@@ -9,6 +9,8 @@ import { requireWithdrawalReferrals, creditApprovedRun, codeHash, postLedger, po
 import { validate } from "./rewards.controller.js";
 import { parseCryptoDestination, validateCryptoTransaction } from "./crypto.js";
 import { displayTaskProof } from "./task-proof-storage.js";
+import { sendUserUpdateEmail } from "../auth/mail.js";
+import { env } from "../../config.js";
 
 const reasonSchema = z.string().trim().min(10).max(500);
 const membershipPlanSchema = z.object({ key: z.string().trim().min(2).max(50).regex(/^[a-z0-9_-]+$/), name: z.string().trim().min(2).max(100), description: z.string().trim().max(1000), priceCents: z.number().int().min(1).max(100000000), durationDays: z.number().int().min(1).max(3650).nullable(), earningPotentialCents: z.number().int().min(0).max(2147483647), minimumReferrals: z.number().int().min(0).max(1000000), minimumCompletedTasks: z.number().int().min(0).max(1000000), active: z.boolean(), accessToPlanIds: z.array(z.string().trim().min(1).max(100)).max(1000).default([]) }).strict();
@@ -204,7 +206,7 @@ export class AdminRewardsController {
   async review(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
     const { user } = await requireUser(req, "rewards.manage");
     const data = validate(z.object({ decision: z.enum(["approve", "reject"]), reason: reasonSchema }).strict(), body);
-    return rewardTransaction(async tx => {
+    const result = await rewardTransaction(async tx => {
       const run = await tx.taskRun.findUnique({ where: { id } });
       if (!run || run.status !== "pending_review") throw new BadRequestException("This submission is no longer awaiting review.");
       if ((await tx.user.findUnique({ where: { id: run.userId } }))?.status === "deleted") throw new BadRequestException("Deleted accounts cannot receive task approvals.");
@@ -214,6 +216,9 @@ export class AdminRewardsController {
       if (data.decision === "approve" && run.autoClaimOnApproval) return creditApprovedRun(tx, run.id);
       return updated;
     });
+    const notice = await db.taskRun.findUnique({ where: { id }, include: { user: { select: { email: true } }, task: { select: { title: true, rewardPoints: true } } } });
+    if (notice) await sendUserUpdateEmail(notice.user.email, data.decision === "approve" ? "Your task was approved" : "Your task needs an update", data.decision === "approve" ? `Great news: "${notice.task.title}" was approved. ${notice.task.rewardPoints.toLocaleString()} points are ready to claim or were credited automatically.` : `Your submission for "${notice.task.title}" needs an update. Review the feedback in your task history and submit it again.`, env.APP_ORIGIN + "/tasks", "View task").catch(() => undefined);
+    return result;
   }
 
   @Patch("eligibility")
@@ -235,7 +240,7 @@ export class AdminRewardsController {
     const { user, sessionId } = await requireUser(req, "rewards.manage");
     await requireRecentStaffAuth(sessionId);
     const data = validate(z.object({ decision: z.enum(["approve", "reject", "paid"]), reason: reasonSchema, paymentReference: z.string().trim().min(5).max(150).optional(), payoutProofImage: z.string().max(2800000).regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/).optional() }).strict(), body);
-    return rewardTransaction(async tx => {
+    const result = await rewardTransaction(async tx => {
       const withdrawal = await tx.withdrawal.findUnique({ where: { id }, include: { user: true } });
       if (!withdrawal) throw new BadRequestException("Withdrawal not found.");
       if (withdrawal.userId === user.id) throw new BadRequestException("Another administrator must review your withdrawal.");
@@ -264,5 +269,8 @@ export class AdminRewardsController {
       await tx.auditLog.create({ data: { actorId: user.id, targetId: id, action: `withdrawal.${updated.status}`, reason: data.reason, detail: { paymentReference: data.paymentReference || null, payoutProofAttached: Boolean(data.payoutProofImage) } } });
       return updated;
     });
+    const notice = await db.withdrawal.findUnique({ where: { id }, include: { user: { select: { email: true } } } });
+    if (notice) await sendUserUpdateEmail(notice.user.email, `Reward withdrawal ${notice.status}`, notice.status === "paid" ? `Your $${(notice.amountCents / 100).toFixed(2)} reward withdrawal has been marked paid.` : notice.status === "approved" ? `Your $${(notice.amountCents / 100).toFixed(2)} reward withdrawal was approved and is being prepared for payment.` : "Your reward withdrawal was not approved. Reserved reward points were returned to your available balance.", env.APP_ORIGIN + "/wallet", "View wallet").catch(() => undefined);
+    return result;
   }
 }
