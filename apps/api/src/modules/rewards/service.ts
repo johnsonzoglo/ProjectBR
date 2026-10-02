@@ -119,10 +119,11 @@ export async function creditApprovedRun(tx: Tx, runId: string) {
 
 export async function startTask(userId: string, taskId: string) {
   return rewardTransaction(async tx => {
-    await activeUser(tx, userId);
+    const user = await activeUser(tx, userId);
     const task = await tx.task.findUnique({ where: { id: taskId } });
     if (!task) throw new NotFoundException("Task not found.");
     if (task.removedAt) throw new BadRequestException("This task has been removed.");
+    if (task.countryCodes.length && (!user.countryCode || !task.countryCodes.includes(user.countryCode))) throw new BadRequestException("This task is not available in your country.");
     if (task.requiresMembership && !(await hasRequiredMembership(tx, userId, task.membershipPlanId))) throw new BadRequestException(task.membershipPlanId ? "The required membership plan is not active on your account." : "A valid membership is required to start this task.");
     const now = new Date();
     if (!task.active || task.startsAt > now || (task.endsAt && task.endsAt < now)) throw new BadRequestException("This task is not accepting new participants.");
@@ -153,9 +154,15 @@ export async function submitTask(userId: string, taskId: string, body: { surveyA
       }
     }
     async function verified(data: Prisma.TaskRunUpdateInput) {
-      const updated = await tx.taskRun.update({ where: { id: run!.id }, data: { ...data, ...(run!.autoClaimOnVerification ? { status: "approved" } : {}) } });
+      const rules = await settings(tx);
+      const structured = ["survey", "image_preference", "product_experience", "code"].includes(run!.verification);
+      const completedTasks = structured && rules.autoApproveStructured ? await tx.taskRun.count({ where: { userId, status: "completed" } }) : 0;
+      const policyApproved = structured && rules.autoApproveStructured && run!.rewardPoints <= rules.instantRewardLimit && completedTasks >= rules.trustedUserCompletedTasks;
+      const instant = run!.autoClaimOnVerification || policyApproved;
+      const updated = await tx.taskRun.update({ where: { id: run!.id }, data: { ...data, ...(instant ? { status: "approved" } : {}) } });
+      if (policyApproved && !run!.autoClaimOnVerification) await tx.auditLog.create({ data: { actorId: userId, targetId: run!.id, action: "task.policy_auto_approved", detail: { verification: run!.verification, rewardPoints: run!.rewardPoints, completedTasks } } });
       await flagFastRepeat();
-      return run!.autoClaimOnVerification ? creditApprovedRun(tx, updated.id) : updated;
+      return instant ? creditApprovedRun(tx, updated.id) : updated;
     }
     if (run.verification === "survey") {
       const questions = surveyQuestionsSchema.parse(run.task.surveyQuestions);

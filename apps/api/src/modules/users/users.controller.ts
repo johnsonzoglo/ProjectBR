@@ -15,7 +15,7 @@ export class UsersController {
   @Patch()
   async update(@Req() req: Request, @Body() body: unknown) {
     const { user } = await requireUser(req);
-    const parsed = z.object({ name: z.string().trim().min(2).max(80), phone: z.string().trim().max(32).nullable().optional(), image: z.string().max(500_000).regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/).nullable().optional() }).strict().safeParse(body);
+    const parsed = z.object({ name: z.string().trim().min(2).max(80), phone: z.string().trim().max(32).nullable().optional(), countryCode: z.string().trim().length(2).toUpperCase().nullable().optional(), currencyCode: z.string().trim().length(3).toUpperCase().nullable().optional(), languageCode: z.enum(["en", "fr", "ar"]).optional(), image: z.string().max(500_000).regex(/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/).nullable().optional() }).strict().safeParse(body);
     if (!parsed.success) throw new BadRequestException("Check your name, phone number, and profile image.");
     const [updated] = await db.$transaction([
       db.user.update({ where: { id: user.id }, data: parsed.data }),

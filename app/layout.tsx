@@ -19,6 +19,20 @@ import "./chat.css";
 import "./admin/redesign.css";
 import "./user-upgrade.css";
 import "./user-contrast.css";
+import "./task-page-refresh.css";
+import "./wallet-refresh.css";
+import "./deposit-refresh.css";
+import "./membership-refresh.css";
+import "./promotion-popup.css";
+import "./notification-refresh.css";
+import "./production-ui.css";
+import "./profile-refresh.css";
+import "./responsive-hardening.css";
+import "./mobile-redesign.css";
+import "./admin/admin-polish.css";
+import "./advertiser/advertiser.css";
+import "./auth-refresh.css";
+import "./region-toggle.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,11 +50,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
   const origin = `${protocol}://${host}`;
   return {
-    title: "Rewardly — Turn spare moments into something more",
+    title: "NuevaReviews — Turn spare moments into something more",
     description: "Complete straightforward online tasks, share what you know, and build clearly tracked rewards at your own pace.",
     openGraph: { title: "Turn spare moments into something more.", description: "Small tasks. Real momentum.", images: [{ url: `${origin}/og.png`, width: 1536, height: 1024 }] },
     twitter: { card: "summary_large_image", title: "Turn spare moments into something more.", images: [`${origin}/og.png`] },
-    robots: { index: false, follow: false },
+    metadataBase: new URL(origin),
+    robots: { index: true, follow: true },
+    icons: { icon: "/icon.svg" },
   };
 }
 

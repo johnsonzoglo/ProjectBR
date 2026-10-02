@@ -18,6 +18,9 @@ model User {
   twoFactorEnabledAt DateTime?
   image         String?
   phone         String?
+  countryCode   String?
+  currencyCode  String?
+  languageCode  String @default("en")
   notificationPreferences Json @default("{}")
   status        String    @default("active")
   deletedAt     DateTime?
@@ -41,6 +44,7 @@ model User {
   referral      Referral? @relation("invitee")
   taskFavorites TaskFavorite[]
   supportTickets SupportTicket[]
+  campaigns Campaign[]
   deletionRequest AccountDeletionRequest?
   @@map("users")
 }
@@ -191,10 +195,14 @@ model RewardSettings {
   referralRequiredTasks Int @default(1)
   minWithdrawalReferrals Int @default(0)
   referralsEnabled Boolean @default(true)
+  autoApproveStructured Boolean @default(false)
+  instantRewardLimit Int @default(500)
+  trustedUserCompletedTasks Int @default(3)
   @@map("reward_settings")
 }
 
 model Task {
+  countryCodes String[] @default([])
   coverImage String?
   coverVersion String?
   featured Boolean @default(false)
@@ -215,6 +223,7 @@ model Task {
   destinationUrl String?
   requiresMembership Boolean @default(false)
   membershipPlanId String?
+  campaignId String?
   active Boolean @default(true)
   startsAt DateTime @default(now())
   endsAt DateTime?
@@ -226,8 +235,28 @@ model Task {
   products TaskProduct[]
   favorites TaskFavorite[]
   membershipPlan MembershipPlan? @relation(fields: [membershipPlanId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   @@index([membershipPlanId])
+  @@index([campaignId])
   @@map("tasks")
+}
+
+model Campaign {
+  id String @id @default(uuid())
+  ownerId String
+  name String
+  objective String
+  budgetCents Int
+  status String @default("draft")
+  startsAt DateTime @default(now())
+  endsAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  tasks Task[]
+  @@index([ownerId, createdAt])
+  @@index([status, startsAt])
+  @@map("campaigns")
 }
 
 model TaskFavorite {

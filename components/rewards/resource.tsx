@@ -29,7 +29,7 @@ export function ResourceFeedback({ loading, error, retry, initial = false }: { l
   return <>{error && <div className="form-error rw-feedback" role="alert"><span>{error}</span><button type="button" className="rw-button rw-button-secondary" onClick={retry}>Try again</button></div>}{loading && initial && <div className="rw-data-loading" role="status"><span className="rw-spinner" />Loading your latest activity…</div>}</>;
 }
 export function RefreshButton({ onClick, busy }: { onClick: () => void; busy: boolean }) {
-  return <button type="button" className="rw-button rw-button-secondary" onClick={onClick} disabled={busy}><RefreshCw size={15} />{busy ? "Refreshing…" : "Refresh"}</button>;
+  return <button type="button" className="rw-button rw-button-secondary rw-refresh-button" onClick={onClick} disabled={busy} aria-label={busy ? "Refreshing" : "Refresh page data"} title={busy ? "Refreshing" : "Refresh"}><RefreshCw size={16} aria-hidden="true" /><span>{busy ? "Refreshing…" : "Refresh"}</span></button>;
 }
 export function Pagination({ page, total, onPage, busy }: { page: number; total: number; onPage: (page: number) => void; busy: boolean }) {
   if (total <= 20) return null;

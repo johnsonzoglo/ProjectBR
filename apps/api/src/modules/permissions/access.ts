@@ -39,6 +39,6 @@ export async function requireRecentStaffAuth(sessionId: string) {
   if (!freshAt || Date.now() - freshAt.getTime() >= 10 * 60 * 1000) throw new ForbiddenException("REAUTH_REQUIRED: Confirm your password in Admin security, then retry this action.");
 }
 
-export function publicProfile(user: { id: string; name: string; email: string; emailVerified: boolean; image?: string | null; phone?: string | null; notificationPreferences?: unknown; status: string; referralCode: string; createdAt: Date; twoFactorEnabled?: boolean }) {
-  return { id: user.id, name: user.name, email: user.email, emailVerified: user.emailVerified, image: user.image || null, phone: user.phone || null, notificationPreferences: user.notificationPreferences || {}, status: user.status, referralCode: user.referralCode, createdAt: user.createdAt, twoFactorEnabled: !!user.twoFactorEnabled };
+export function publicProfile(user: { id: string; name: string; email: string; emailVerified: boolean; image?: string | null; phone?: string | null; countryCode?: string | null; currencyCode?: string | null; languageCode?: string; notificationPreferences?: unknown; status: string; referralCode: string; createdAt: Date; twoFactorEnabled?: boolean }) {
+  return { id: user.id, name: user.name, email: user.email, emailVerified: user.emailVerified, image: user.image || null, phone: user.phone || null, countryCode: user.countryCode || null, currencyCode: user.currencyCode || null, languageCode: user.languageCode || "en", notificationPreferences: user.notificationPreferences || {}, status: user.status, referralCode: user.referralCode, createdAt: user.createdAt, twoFactorEnabled: !!user.twoFactorEnabled };
 }

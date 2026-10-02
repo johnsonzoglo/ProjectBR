@@ -2,6 +2,7 @@ import { db } from "../apps/api/src/database.js";
 
 const definitions: Record<string, { name: string; permissions: string[] }> = {
   user: { name: "User", permissions: ["profile.manage"] },
+  advertiser: { name: "Advertiser", permissions: ["profile.manage", "campaigns.manage"] },
   admin: { name: "Admin", permissions: ["profile.manage", "users.read", "users.manage", "chat.manage", "audit.read", "rewards.manage"] },
   super_admin: { name: "Super Admin", permissions: ["profile.manage", "users.read", "users.manage", "chat.manage", "audit.read", "rewards.manage", "roles.manage", "settings.finance.manage"] },
 };

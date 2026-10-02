@@ -64,16 +64,17 @@ export default function Home() {
   return (
     <main className="landing-page">
       <header className="landing-nav">
-        <Link href="/tasks" className="landing-brand" aria-label="Rewardly tasks">
+        <Link href="/" className="landing-brand" aria-label="NuevaReviews home">
           <span>
             <Layers2 size={22} />
           </span>
-          rewardly<i>.</i>
+          NuevaReviews<i>.</i>
         </Link>
         <nav aria-label="Primary navigation">
           <a href="#opportunities">Opportunities</a>
           <a href="#how-it-works">How it works</a>
           <a href="#member-story">Member story</a>
+          <a href="#faq">FAQ</a>
         </nav>
         <div className="landing-nav-actions">
           <Link href="/login" className="landing-link">
@@ -126,7 +127,7 @@ export default function Home() {
         </div>
         <div
           className="landing-visual"
-          aria-label="People completing Rewardly tasks together"
+          aria-label="People completing NuevaReviews tasks together"
         >
           <img
             src="/rewardly-team-hero.png"
@@ -169,7 +170,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="landing-proof-strip" aria-label="Rewardly benefits">
+      <section className="landing-proof-strip" aria-label="NuevaReviews benefits">
         <div>
           <strong>
             <ShieldCheck size={18} />
@@ -234,7 +235,7 @@ export default function Home() {
 
       <section className="landing-section" id="how-it-works">
         <div className="landing-section-heading">
-          <span className="landing-kicker">HOW REWARDLY WORKS</span>
+          <span className="landing-kicker">HOW NUEVAREVIEWS WORKS</span>
           <h2>
             A simple rhythm
             <br />
@@ -265,7 +266,7 @@ export default function Home() {
         <div className="landing-story-photo">
           <img
             src="/rewardly-member-story.png"
-            alt="A Rewardly member checking progress while working from home"
+            alt="A NuevaReviews member checking progress while working from home"
           />
           <div className="landing-story-badge">
             <Star size={17} fill="currentColor" />
@@ -280,7 +281,7 @@ export default function Home() {
             <Users size={14} />
             MADE FOR REAL ROUTINES
           </span>
-          <h2>Your day is already full. Rewardly fits around it.</h2>
+          <h2>Your day is already full. NuevaReviews fits around it.</h2>
           <p>
             Whether you have ten minutes between plans or a quiet hour in the
             evening, you decide when to participate. Your dashboard keeps the
@@ -306,6 +307,20 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="landing-section landing-faq" id="faq">
+        <div className="landing-section-heading">
+          <span className="landing-kicker">QUESTIONS, ANSWERED</span>
+          <h2>Know how it works before you join.</h2>
+          <p>Availability, review times, and reward values vary by task. NuevaReviews does not promise a fixed income.</p>
+        </div>
+        <div className="landing-faq-grid">
+          <details><summary>Is NuevaReviews free to join?</summary><p>Creating an account is free. Some optional task groups can require an active membership, which is always shown before purchase.</p></details>
+          <details><summary>When are points credited?</summary><p>Some tasks verify instantly. Others require an administrator to review submitted proof. The task shows its review method before you begin.</p></details>
+          <details><summary>How do withdrawals work?</summary><p>Eligible earned reward points can be converted after meeting the displayed minimum and referral requirements. Deposited membership funds cannot be withdrawn.</p></details>
+          <details><summary>Where can I get help?</summary><p>Signed-in members can use private support chat. You can also visit the contact page before creating an account.</p></details>
+        </div>
+      </section>
+
       <section className="landing-cta">
         <span className="landing-kicker">MAKE YOUR NEXT MOMENT COUNT</span>
         <h2>
@@ -313,7 +328,7 @@ export default function Home() {
           <br />
           go a long way.
         </h2>
-        <p>Join Rewardly free and discover your next opportunity.</p>
+        <p>Join NuevaReviews free and discover your next opportunity.</p>
         <Link href="/register" className="landing-button landing-button-light">
           Create my free account
           <ArrowRight size={18} />
@@ -322,16 +337,20 @@ export default function Home() {
         <span className="landing-cta-coin landing-cta-coin-two">+</span>
       </section>
       <footer className="landing-footer">
-        <Link href="/tasks" className="landing-brand">
+        <Link href="/" className="landing-brand">
           <span>
             <Layers2 size={20} />
           </span>
-          rewardly<i>.</i>
+          NuevaReviews<i>.</i>
         </Link>
         <p>Small steps. Clear rewards.</p>
         <div>
           <Link href="/login">Sign in</Link>
           <Link href="/register">Create account</Link>
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/contact">Contact</Link>
         </div>
       </footer>
     </main>

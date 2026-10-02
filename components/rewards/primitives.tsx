@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Check, CheckCircle2, Coins, Flame, LockKeyhole, Sparkles, Trophy, X, type LucideIcon } from "lucide-react";
 
 export function AnimatedCounter({ value, decimals = 0, prefix = "" }: { value: number; decimals?: number; prefix?: string }) {
@@ -42,15 +42,18 @@ export function AchievementBadge({ title, icon: Icon, unlocked }: { title: strin
 
 export function Modal({ title, children, onClose, className = "" }: { title: string; children: ReactNode; onClose: () => void; className?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   const close = useRef(onClose);
   useEffect(() => { close.current = onClose; }, [onClose]);
   useEffect(() => {
     const dialog = ref.current;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     dialog?.showModal();
-    return () => { dialog?.close(); trigger?.focus(); };
+    return () => { dialog?.close(); document.body.style.overflow = previousOverflow; trigger?.focus(); };
   }, []);
-  return <dialog ref={ref} className={`rw-modal ${className}`} aria-label={title} onCancel={event => { event.preventDefault(); close.current(); }} onClick={event => { if (event.target === event.currentTarget) { const box = event.currentTarget.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) close.current(); } }}><div className="rw-modal-top"><span className="rw-overline">REWARDLY</span><button className="rw-icon-button" onClick={onClose} aria-label="Close dialog"><X size={20} /></button></div>{children}</dialog>;
+  return <dialog ref={ref} className={`rw-modal ${className}`} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); close.current(); }} onClick={event => { if (event.target === event.currentTarget) close.current(); }}><h2 id={titleId} className="rw-sr-only">{title}</h2><div className="rw-modal-top"><span className="rw-overline">NUEVAREVIEWS</span><button type="button" className="rw-icon-button" onClick={onClose} aria-label="Close dialog"><X size={20} /></button></div>{children}</dialog>;
 }
 
 export function ClaimSuccessModal({ points, onClose }: { points: number; onClose: () => void }) {

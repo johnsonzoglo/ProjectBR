@@ -1,4 +1,1 @@
-import { redirect } from "next/navigation";
-
-// Homepage temporarily disabled; its design is preserved in components/disabled-home-page.tsx.
-export default function Home() { redirect("/tasks"); }
+export { default } from "../components/disabled-home-page";

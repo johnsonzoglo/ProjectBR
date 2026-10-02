@@ -20,7 +20,7 @@ function ReferralPage({ profile }: { profile: Profile }) {
   async function share() {
     if (!data) return; setError(""); setMessage("");
     if (!navigator.share) return copy(data.link, "Referral link");
-    try { await navigator.share({ title: "Join me on Rewardly", text: "A little time. A little progress. Join me on Rewardly.", url: data.link }); setMessage("Referral link shared."); }
+    try { await navigator.share({ title: "Join me on NuevaReviews", text: "A little time. A little progress. Join me on NuevaReviews.", url: data.link }); setMessage("Referral link shared."); }
     catch (e) { if ((e as Error).name !== "AbortError") setError("Sharing could not open. Use Copy link instead."); }
   }
   return <Shell name={profile.user.name} admin={profile.permissions.includes("users.read")}>

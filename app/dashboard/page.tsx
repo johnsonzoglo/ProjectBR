@@ -1,4 +1,8 @@
-import { redirect } from "next/navigation";
+"use client";
 
-// Temporarily use Tasks as the user landing page.
-export default function DashboardPage() { redirect("/tasks"); }
+import { AccountGate } from "../../components/account-gate";
+import { LiveDashboard } from "../../components/rewards/live-dashboard";
+
+export default function DashboardPage() {
+  return <AccountGate>{profile => <LiveDashboard profile={profile} />}</AccountGate>;
+}

@@ -1,0 +1,40 @@
+/* Production UI safeguards and accessibility overrides. */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb,var(--rw-primary,#6c4bed) 72%,white);
+  outline-offset: 3px;
+}
+button,summary { touch-action:manipulation; }
+summary { cursor:pointer; }
+.rw-icon-button,.rw-theme-toggle,.ad-menu,.ad-sidebar-close { min-width:44px;min-height:44px; }
+.rw-bottom-nav small { font-size:11px; }
+.rw-modal-top .rw-overline,.chat-bubble time,.chat-conversation-copy strong time,.chat-conversation-copy small,.user-chat-trust small,.floating-chat-top span,.floating-chat-panel .support-thread>header small { font-size:12px; }
+.rw-password-checks { display:grid;gap:7px;margin:10px 0 0;padding:0;list-style:none;color:var(--rw-text-secondary,#6b7280);font-size:12px; }
+.rw-password-checks li { display:flex;align-items:center;gap:7px; }
+.rw-password-checks li.is-met { color:#16805a; }
+.landing-faq { background:#f5f2ff; }
+.landing-faq-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:900px;margin:36px auto 0; }
+.landing-faq-grid details { padding:20px;border:1px solid #ded8f5;border-radius:16px;background:#fff; }
+.landing-faq-grid summary { font-weight:750; }
+.landing-faq-grid p { margin:12px 0 0;color:var(--muted);font-size:14px;line-height:1.65; }
+.landing-footer>div { display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px 18px; }
+.rw-transaction-review { display:grid;gap:1px;margin:18px 0;border:1px solid var(--rw-border);border-radius:16px;overflow:hidden;background:var(--rw-border); }
+.rw-transaction-review>div { display:grid;grid-template-columns:minmax(110px,.7fr) minmax(0,1.3fr);gap:16px;padding:13px 15px;background:var(--rw-surface); }
+.rw-transaction-review dt { color:var(--rw-text-secondary);font-size:12px; }
+.rw-transaction-review dd { margin:0;text-align:right;font-weight:700;overflow-wrap:anywhere; }
+.rw-danger-notice { border-color:#e8b4b4!important;background:#fff4f4!important;color:#8b2020!important; }
+.rw-withdrawal-row details .rw-button { margin-top:10px; }
+.ad-table-wrap { overscroll-behavior-x:contain;scrollbar-gutter:stable; }
+.ad-table th { position:sticky;top:0;z-index:1;background:var(--rw-surface,#fff); }
+@media (max-width:700px) {
+  .landing-faq-grid { grid-template-columns:1fr; }
+  .landing-nav nav { display:none; }
+  .landing-footer { align-items:flex-start; }
+  .landing-footer>div { justify-content:flex-start; }
+  .rw-modal { width:calc(100% - 16px);max-height:calc(100dvh - 16px);padding:18px;border-radius:20px; }
+  .rw-transaction-review>div { grid-template-columns:1fr;gap:5px; }
+  .rw-transaction-review dd { text-align:left; }
+  .rw-main { padding-bottom:calc(96px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; }
+}

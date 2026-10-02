@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect -- async resource hydration is intentionally effect-driven */
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 type Ticket={id:string;category:string;subject:string;message:string;status:string;adminResponse?:string|null;createdAt:string};

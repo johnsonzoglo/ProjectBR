@@ -31,3 +31,14 @@ export async function designImageData(file: File, maxEdge?: number) {
     throw new Error('The image is too detailed to resize. Try a smaller export.');
   } finally { bitmap.close(); }
 }
+
+export async function designVideoData(file: File) {
+  if (!['video/mp4', 'video/webm'].includes(file.type)) throw new Error('Choose an MP4 or WebM video.');
+  if (file.size > 8 * 1024 * 1024) throw new Error('Choose a video smaller than 8 MB. Compress longer videos before uploading.');
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('The video could not be read.'));
+    reader.readAsDataURL(file);
+  });
+}

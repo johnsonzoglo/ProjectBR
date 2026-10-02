@@ -1,0 +1,1 @@
+ALTER TABLE "tasks" ADD COLUMN "countryCodes" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

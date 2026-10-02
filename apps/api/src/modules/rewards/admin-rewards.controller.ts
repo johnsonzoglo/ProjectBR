@@ -95,7 +95,7 @@ export class AdminRewardsController {
   @Patch("settings")
   async rules(@Req() req: Request, @Body() body: unknown) {
     const { user } = await requireUser(req, "rewards.manage");
-    const { reason, ...data } = validate(z.object({ pointsPerUsd: z.number().int().min(1).max(1000000), minWithdrawalCents: z.number().int().min(1).max(1000000), maxWithdrawalCents: z.number().int().min(1).max(1000000), referralRewardPoints: z.number().int().min(0).max(1000000), referralRequiredTasks: z.number().int().min(1).max(1000), referralsEnabled: z.boolean(), minWithdrawalReferrals: z.number().int().min(0).max(1000000).optional(), reason: reasonSchema }).strict().refine(r => r.maxWithdrawalCents >= r.minWithdrawalCents, "Maximum must be at least the minimum"), body);
+    const { reason, ...data } = validate(z.object({ pointsPerUsd: z.number().int().min(1).max(1000000), minWithdrawalCents: z.number().int().min(1).max(1000000), maxWithdrawalCents: z.number().int().min(1).max(1000000), referralRewardPoints: z.number().int().min(0).max(1000000), referralRequiredTasks: z.number().int().min(1).max(1000), referralsEnabled: z.boolean(), minWithdrawalReferrals: z.number().int().min(0).max(1000000).optional(), autoApproveStructured: z.boolean().optional(), instantRewardLimit: z.number().int().min(1).max(1000000).optional(), trustedUserCompletedTasks: z.number().int().min(0).max(10000).optional(), reason: reasonSchema }).strict().refine(r => r.maxWithdrawalCents >= r.minWithdrawalCents, "Maximum must be at least the minimum"), body);
     return rewardTransaction(async tx => {
       const previous = await settings(tx);
       const updated = await tx.rewardSettings.update({ where: { id: "default" }, data });
@@ -173,6 +173,16 @@ export class AdminRewardsController {
       await tx.auditLog.create({ data: { actorId: user.id, action: "task.updated", targetId: id, detail: { title: task.title, rewardPoints: task.rewardPoints, active: task.active } } });
       return task;
     });
+  }
+
+  @Patch("tasks/:id/countries")
+  async taskCountries(@Req() req: Request, @Param("id") id: string, @Body() body: unknown) {
+    const { user } = await requireUser(req, "rewards.manage");
+    const { countryCodes } = validate(z.object({ countryCodes: z.array(z.string().regex(/^[A-Z]{2}$/)).max(100) }).strict(), body);
+    const unique = [...new Set(countryCodes)];
+    const task = await db.task.update({ where: { id }, data: { countryCodes: unique } });
+    await db.auditLog.create({ data: { actorId: user.id, targetId: id, action: "task.countries_updated", detail: { countryCodes: unique } } });
+    return task;
   }
 
   @Patch("tasks/:id/membership")

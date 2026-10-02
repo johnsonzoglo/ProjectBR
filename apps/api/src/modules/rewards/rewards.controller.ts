@@ -26,7 +26,7 @@ export class RewardsController {
     const now = new Date(); const day = new Date(now); day.setUTCHours(0, 0, 0, 0);
     const [tasks, purchases, favorites] = await Promise.all([
       db.task.findMany({
-        where: { removedAt: null, OR: [{ active: true, startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gte: now } }] }, { runs: { some: { userId: user.id } } }] },
+        where: { removedAt: null, AND: [{ OR: [{ active: true, startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gte: now } }] }, { runs: { some: { userId: user.id } } }] }, { OR: [{ countryCodes: { isEmpty: true } }, { countryCodes: { has: user.countryCode || "__" } }, { runs: { some: { userId: user.id } } }] }] },
         omit: { coverImage: true, surveyQuestions: true },
         include: {
           products: { orderBy: { position: "asc" }, select: { id: true, taskId: true, name: true, description: true, position: true } },
@@ -85,8 +85,9 @@ export class RewardsController {
   @Get("tasks/:id/cover")
   async cover(@Req() req: Request, @Param("id") id: string, @Res() res: Response) {
     const { user } = await requireUser(req);
-    const task = await db.task.findUnique({ where: { id }, select: { coverImage: true, removedAt: true, active: true, startsAt: true, endsAt: true, requiresMembership: true, membershipPlanId: true } });
+    const task = await db.task.findUnique({ where: { id }, select: { coverImage: true, countryCodes: true, removedAt: true, active: true, startsAt: true, endsAt: true, requiresMembership: true, membershipPlanId: true } });
     if (!task?.coverImage || task.removedAt || (task.requiresMembership && !(await hasRequiredMembership(db, user.id, task.membershipPlanId)))) throw new NotFoundException("Cover not found.");
+    if (task.countryCodes.length && (!user.countryCode || !task.countryCodes.includes(user.countryCode)) && !(await db.taskRun.count({ where: { taskId: id, userId: user.id } }))) throw new NotFoundException("Cover not found.");
     const now = new Date();
     if ((!task.active || task.startsAt > now || (task.endsAt && task.endsAt < now)) && !(await db.taskRun.count({ where: { taskId: id, userId: user.id } }))) throw new NotFoundException("Cover not found.");
     const match = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(task.coverImage);

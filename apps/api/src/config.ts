@@ -13,7 +13,7 @@ const schema = z.object({
   MAIL_MODE: z.enum(["file", "smtp"]).default("file"),
   MAIL_OUTBOX: z.string().default(".local/mail"),
   TASK_PROOF_DIR: z.string().default(".local/task-proofs"),
-  MAIL_FROM: z.string().default("Rewardly <noreply@example.com>"),
+  MAIL_FROM: z.string().default("NuevaReviews <noreply@example.com>"),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "languageCode" TEXT NOT NULL DEFAULT 'en';

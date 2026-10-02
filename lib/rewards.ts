@@ -1,7 +1,8 @@
+import { formatMoney } from "./currency";
 export type ReferralRequirement = { required: number; qualified: number; remaining: number; met: boolean };
 export type SurveyQuestion = { id: string; prompt: string; type: "text" | "single_choice" | "yes_no"; options: string[] };
 export type SurveyAnswer = { questionId: string; answer: string };
-export type Rules = { depositsEnabled?: boolean; withdrawalsEnabled?: boolean; minWithdrawalReferrals?: number; pointsPerUsd: number; minWithdrawalCents: number; maxWithdrawalCents: number; referralRewardPoints: number; referralRequiredTasks: number; referralsEnabled: boolean };
+export type Rules = { depositsEnabled?: boolean; withdrawalsEnabled?: boolean; minWithdrawalReferrals?: number; autoApproveStructured?: boolean; instantRewardLimit?: number; trustedUserCompletedTasks?: number; pointsPerUsd: number; minWithdrawalCents: number; maxWithdrawalCents: number; referralRewardPoints: number; referralRequiredTasks: number; referralsEnabled: boolean };
 export type ProductItem = { id: string; name: string; description: string; imageUrl: string | null; position: number };
 export type TaskRun = { surveyAnswers?: SurveyAnswer[] | null; rating?: number | null; round?: number; autoClaimOnVerification?: boolean; autoClaimOnApproval?: boolean; id: string; status: "in_progress" | "pending_review" | "approved" | "completed"; rewardPoints: number; verification: "code" | "manual" | "product_experience" | "image_preference" | "rating_review" | "survey"; proof: string | null; proofImage?: string | null; reviewReason: string | null; startedAt: string; completedAt: string | null };
 export type Task = { favorite?: boolean; coverImage?: string | null; coverImageUrl?: string | null; coverVersion?: string | null; featured?: boolean; completedVisibleHours?: number; surveyQuestions?: SurveyQuestion[]; repeatHours?: number | null; autoClaimOnVerification?: boolean; autoClaimOnApproval?: boolean; nextAvailableAt?: string | null; round?: number; id: string; title: string; description: string; instructions: string; category: string; taskType: "standard" | "product_experience" | "image_preference" | "movie_review" | "music_review" | "survey"; products: ProductItem[]; rewardPoints: number; verification: "code" | "manual" | "product_experience" | "image_preference" | "rating_review" | "survey"; destinationUrl: string | null; requiresMembership: boolean; membershipPlanId: string | null; membershipPlan?: { id: string; name: string; key: string } | null; active: boolean; startsAt: string; endsAt: string | null; dailyLimit: number; totalLimit: number; createdAt: string; run: TaskRun | null; slotsRemaining: number };
@@ -19,7 +20,7 @@ export function amountToCents(amount: string) {
 export type Paged<T> = { items: T[]; total: number; page: number; pageSize: number };
 export type ReferralItem = { id: string; name: string; emailVerified: boolean; completedTasks: number; requiredTasks: number; rewardPoints: number; verifiedAt: string | null; qualifiedAt: string | null; createdAt: string };
 export type Referrals = Paged<ReferralItem> & { code: string; link: string; verified: number; qualified: number; earningsPoints: number; rules: Rules };
-export const money = (cents: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+export const money = (cents: number) => formatMoney(cents);
 export const points = (value: number) => value.toLocaleString("en-US");
 export const date = (value: string) => new Date(value).toLocaleString();
 export const taskStatus = (task: Task) => !task.run ? "Available" : task.run.status === "completed" ? "Completed" : task.run.status === "pending_review" ? "Pending Review" : "In Progress";

@@ -5,6 +5,8 @@ import { NotificationsController } from "./modules/notifications/notifications.c
 import { StaffController } from "./modules/users/staff.controller.js";
 import { StaffSecurityController } from "./modules/permissions/staff-security.controller.js";
 import { ReconciliationController } from "./modules/rewards/reconciliation.controller.js";
+import { AdvertiserController } from "./modules/rewards/advertiser.controller.js";
+import { CurrencyController } from "./modules/users/currency.controller.js";
 import { Controller, Get, Headers, Module, NotFoundException, Res } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import express from "express";
@@ -36,7 +38,7 @@ class HealthController {
   }
 }
 
-@Module({ controllers: [PromotionsController, ChatController, NotificationsController, StaffController, StaffSecurityController, ReconciliationController, HealthController, UsersController, PortalController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
+@Module({ controllers: [PromotionsController, ChatController, NotificationsController, StaffController, StaffSecurityController, ReconciliationController, AdvertiserController, CurrencyController, HealthController, UsersController, PortalController, AdminController, RewardsController, AdminRewardsController, PaymentsController] })
 class AppModule {}
 
 export async function createApp() {

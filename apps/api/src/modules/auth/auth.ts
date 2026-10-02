@@ -8,11 +8,11 @@ import { sendAccountEmail } from "./mail.js";
 import { markReferralVerified, qualifyReferral, rewardTransaction } from "../rewards/service.js";
 
 export const auth = betterAuth({
-  appName: "Rewardly",
-  plugins: [twoFactor({ issuer: "Rewardly", trustedDevices: { enabled: false } }), emailOTP({ otpLength: 6, expiresIn: 600, allowedAttempts: 5, storeOTP: "hashed", overrideDefaultEmailVerification: true, disableSignUp: true,
+  appName: "NuevaReviews",
+  plugins: [twoFactor({ issuer: "NuevaReviews", trustedDevices: { enabled: false } }), emailOTP({ otpLength: 6, expiresIn: 600, allowedAttempts: 5, storeOTP: "hashed", overrideDefaultEmailVerification: true, disableSignUp: true,
     sendVerificationOTP: async ({ email, otp, type }) => {
       if (type !== "email-verification") throw new Error("Unsupported verification purpose");
-      await sendAccountEmail(email, "Verify your Rewardly email", "", otp);
+      await sendAccountEmail(email, "Verify your NuevaReviews email", "", otp);
     },
   })],
   baseURL: env.APP_ORIGIN,
@@ -27,7 +27,7 @@ export const auth = betterAuth({
     requireEmailVerification: false,
     autoSignIn: false,
     revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => sendAccountEmail(user.email, "Reset your Rewardly password", url),
+    sendResetPassword: async ({ user, url }) => sendAccountEmail(user.email, "Reset your NuevaReviews password", url),
     onPasswordReset: async ({ user }) => {
       await db.auditLog.create({ data: { actorId: user.id, action: "auth.password_reset", targetId: user.id } });
     },
@@ -44,6 +44,8 @@ export const auth = betterAuth({
     additionalFields: {
       status: { type: "string", defaultValue: "active", input: false },
       signupReferralCode: { type: "string", required: false, input: true },
+      countryCode: { type: "string", required: true, input: true },
+      languageCode: { type: "string", defaultValue: "en", input: false },
     },
   },
   rateLimit: {
@@ -66,6 +68,9 @@ export const auth = betterAuth({
         before: async (user) => {
           if (user.name.trim().length < 2 || user.name.trim().length > 80) throw new APIError("BAD_REQUEST", { message: "Your name must contain 2 to 80 characters." });
           const code = typeof user.signupReferralCode === "string" ? user.signupReferralCode.trim() : "";
+          const countryCode = typeof user.countryCode === "string" ? user.countryCode.trim().toUpperCase() : "";
+          if (!/^[A-Z]{2}$/.test(countryCode)) throw new APIError("BAD_REQUEST", { message: "Select your country to create an account." });
+          const languageCode = ["AE","SA","QA","KW","BH","OM","EG"].includes(countryCode) ? "ar" : ["FR","BE","CA"].includes(countryCode) ? "fr" : "en";
           if (code) {
             const inviter = code.length <= 80 ? await db.user.findUnique({ where: { referralCode: code } }) : null;
             const rules = await db.rewardSettings.upsert({ where: { id: "default" }, create: { id: "default" }, update: {} });
@@ -73,7 +78,7 @@ export const auth = betterAuth({
               throw new APIError("BAD_REQUEST", { message: "This referral code is invalid or unavailable. Check the code or remove it to register without a referral." });
             }
           }
-          return { data: { ...user, signupReferralCode: code || null, name: user.name.trim(), email: user.email.trim().toLowerCase() } };
+          return { data: { ...user, countryCode, languageCode, signupReferralCode: code || null, name: user.name.trim(), email: user.email.trim().toLowerCase() } };
         },
       },
       update: {

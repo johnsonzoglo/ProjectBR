@@ -1,7 +1,7 @@
 import { db } from "../../database.js";
 export type Notice = { key: string; title: string; message: string; href: string; category: string; createdAt: Date };
 export async function notificationFeed(userId: string, permissions: string[]) {
- const items: Notice[]=[]; const since=new Date(Date.now()-30*86400000);
+ let items: Notice[]=[]; const since=new Date(Date.now()-30*86400000);
  const add=(key:string,title:string,message:string,href:string,category:string,createdAt:Date)=>items.push({key,title,message,href,category,createdAt});
  const staff=permissions.includes("users.read");
  if(staff){
@@ -19,12 +19,16 @@ export async function notificationFeed(userId: string, permissions: string[]) {
    db.deposit.findMany({where:{userId,status:{in:["completed","rejected","pending_review"]},OR:[{reviewedAt:{gte:since}},{submittedAt:{gte:since}}]},select:{id:true,status:true,amountCents:true,reviewedAt:true,submittedAt:true,createdAt:true}}).then(rows=>rows.forEach(r=>add("deposit:"+r.id+":"+r.status+":"+r.submittedAt?.getTime(),"Deposit "+r.status.replaceAll("_"," "),"$"+(r.amountCents/100).toFixed(2)+" deposit update.","/payments","payments",r.reviewedAt||r.submittedAt||r.createdAt))),
    db.membershipPurchase.findMany({where:{userId,OR:[{createdAt:{gte:since}},{expiresAt:{gte:since,lte:new Date(Date.now()+3*86400000)}}]},select:{id:true,status:true,createdAt:true,expiresAt:true,plan:{select:{name:true}}}}).then(rows=>rows.forEach(r=>{const phase=r.status!=="active"?r.status:r.expiresAt&&r.expiresAt<=new Date()?"expired":r.expiresAt&&r.expiresAt.getTime()<=Date.now()+3*86400000?"expiring soon":"active";add("membership:"+r.id+":"+phase,"Membership "+phase,r.plan.name,"/membership","membership",phase==="expired"?r.expiresAt!:r.createdAt);})),
    db.ledgerEntry.findMany({where:{userId,kind:"referral_credit",createdAt:{gte:since}},select:{id:true,points:true,createdAt:true}}).then(rows=>rows.forEach(r=>add("referral:"+r.id,"Referral reward credited",r.points+" points added to your wallet.","/referrals","referrals",r.createdAt)))
+   ,db.task.findMany({where:{active:true,removedAt:null,startsAt:{lte:new Date()},createdAt:{gte:new Date(Date.now()-7*86400000)}},select:{id:true,title:true,rewardPoints:true,createdAt:true},orderBy:{createdAt:"desc"},take:10}).then(rows=>rows.forEach(r=>add("task-new:"+r.id,"New task available",r.title+" · "+r.rewardPoints+" points","/tasks","tasks",r.createdAt)))
+   ,db.task.findMany({where:{active:true,removedAt:null,endsAt:{gte:new Date(),lte:new Date(Date.now()+2*86400000)}},select:{id:true,title:true,endsAt:true},orderBy:{endsAt:"asc"},take:10}).then(rows=>rows.forEach(r=>add("task-expiring:"+r.id+":"+r.endsAt?.getTime(),"Task ending soon",r.title,"/tasks","tasks",r.endsAt!)))
   ]);
  }
  if (permissions.includes("chat.manage") || !staff) {
   const chats = await db.chatConversation.findMany({ where: permissions.includes("chat.manage") ? {} : {userId}, include: { reads: {where:{userId}}, messages: {where:{senderId:{not:userId}},orderBy:{id:"desc"},take:1,select:{id:true,senderName:true,createdAt:true}} } });
   chats.forEach(chat=>{const message=chat.messages[0];if(message && message.id>(chat.reads[0]?.lastReadId||0)) add("chat:"+message.id,"New support message",permissions.includes("chat.manage")?"Message from "+message.senderName:"The support team replied to your conversation.",(permissions.includes("chat.manage")?"/admin/chat":"/support")+"?conversation="+chat.id,"chat",message.createdAt);});
  }
+ const account=await db.user.findUnique({where:{id:userId},select:{notificationPreferences:true}});const preferences=(account?.notificationPreferences||{}) as Record<string,boolean>;
+ if(!staff){items=items.filter(item=>item.category!=="tasks"||preferences.inAppTasks!==false).filter(item=>item.category!=="payments"||preferences.inAppPayments!==false);}
  items.sort((a,b)=>b.createdAt.getTime()-a.createdAt.getTime()||a.key.localeCompare(b.key));
  const reads=await db.notificationRead.findMany({where:{userId,key:{in:items.map(i=>i.key)}},select:{key:true}});const read=new Set(reads.map(r=>r.key));
  return items.map(item=>({...item,read:read.has(item.key)}));

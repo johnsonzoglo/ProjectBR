@@ -5,7 +5,7 @@ import { NotificationCenter } from "./notification-center";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ChevronRight, ClipboardCheck, ClipboardList, Crown, GitCompareArrows, History, LayoutDashboard, LockKeyhole, LogOut, Megaphone, Menu, MessageCircle, Network, SlidersHorizontal, Sparkles, UserCog, Users, Wallet, X } from "lucide-react";
+import { ArrowUpRight, ChevronRight, ClipboardCheck, ClipboardList, Crown, GitCompareArrows, Globe2, History, LayoutDashboard, LockKeyhole, LogOut, Megaphone, Menu, MessageCircle, Network, SlidersHorizontal, Sparkles, UserCog, Users, Wallet, X } from "lucide-react";
 import { ThemeSurface, ThemeToggle } from "./rewards/theme";
 import { api } from "../lib/api";
 
@@ -13,6 +13,7 @@ const groups = [
   { label: "Workspace", items: [
     { href: "/admin", label: "Overview", icon: LayoutDashboard },
     { href: "/admin/tasks", label: "Tasks", icon: ClipboardList },
+    { href: "/admin/regional-tasks", label: "Regional tasks", icon: Globe2 },
     { href: "/admin/reviews", label: "Task reviews", icon: ClipboardCheck },
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/chat", label: "Support", icon: MessageCircle },
@@ -48,7 +49,7 @@ export function AdminShell({ children, name = "Administrator", roles = [], permi
     <a href="#admin-main" className="rw-skip-link">Skip to content</a>
     {menu && <button className="ad-backdrop" aria-label="Close navigation" onClick={() => setMenu(false)} />}
     <aside className={`ad-sidebar ${menu ? "is-open" : ""}`}>
-      <div className="ad-brand-row"><Link href="/admin" className="ad-brand" onClick={() => setMenu(false)}><span className="ad-brand-mark"><Sparkles size={21} /></span><span>Rewardly<strong>ADMIN CONSOLE</strong></span></Link><button className="ad-sidebar-close" aria-label="Close admin menu" onClick={() => setMenu(false)}><X size={19}/></button></div>
+      <div className="ad-brand-row"><Link href="/admin" className="ad-brand" onClick={() => setMenu(false)}><span className="ad-brand-mark"><Sparkles size={21} /></span><span>NuevaReviews<strong>ADMIN CONSOLE</strong></span></Link><button className="ad-sidebar-close" aria-label="Close admin menu" onClick={() => setMenu(false)}><X size={19}/></button></div>
       <nav aria-label="Admin navigation">{groups.map(group => {
         const items = group.items.filter(item => item.href !== "/admin/staff" || roles.includes("super_admin")).filter(item => item.href !== "/admin/reconciliation" || permissions.includes("rewards.manage"));
         return <div className="ad-nav-group" key={group.label}><div className="ad-nav-label">{group.label}</div>{items.map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setMenu(false)} className={path === href ? "is-active" : ""} aria-current={path === href ? "page" : undefined}><Icon size={18} strokeWidth={1.9} /><span>{label}</span>{path === href && <ChevronRight className="ad-nav-chevron" size={15}/>}</Link>)}</div>;
